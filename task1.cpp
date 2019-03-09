@@ -19,6 +19,7 @@ string dec2Binary(lli decimalNum, int length){
 }
 //End of function dec2Binary
 
+//Verified: createMap working correctly
 //Function to create map between binary number and its equivalent hexadecimal 
 void createMap(unordered_map<string, char> *um){ 
     (*um)["0000"] = '0'; 
@@ -39,7 +40,8 @@ void createMap(unordered_map<string, char> *um){
     (*um)["1111"] = 'F'; 
 }
 //End of function createMap
-  
+ 
+//Verified: bin2Hex working correctly
 //Functiom to convert binary string to hexadecimal string 
 string bin2Hex(string bin){ 
     int l=bin.size(); 
