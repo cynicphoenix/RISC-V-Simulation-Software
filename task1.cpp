@@ -3,19 +3,20 @@
 #define lli long long int
 using namespace std;
 
+//Verified: dec2Binary working correctly
 //Function to convert integer number to binary string 
 string dec2Binary(lli decimalNum, int length){
-	int i=0;
+	int i=0,l=length;
 	string binaryNum="";
-	while(length--)
-		binaryNum=binaryNum+'0';
-    	while(decimalNum>0){
-        	binaryNum[i]=decimalNum%2; 
-        	decimalNum=decimalNum/2; 
-        	i++; 
-    	}
+	while(l--)
+		binaryNum=binaryNum+"0";
+    while(decimalNum>0){
+       	binaryNum[length-i-1]=decimalNum%2+'0'; 
+       	decimalNum=decimalNum/2; 
+       	i++; 
+    }
     return binaryNum;
-} 
+}
 //End of function dec2Binary
 
 //Function to create map between binary number and its equivalent hexadecimal 
