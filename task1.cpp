@@ -121,147 +121,90 @@ string asm2mc(string line){
 	string opcode="",funct3="",funct7="";
 	string immediate="";
 	string rs1="", rs2="", rd=""; 
+	string type="";
 
 	int i=0;
 	while(line[i]!=' ')
 		instruction+=line[i++];
 
-	if(instruction=="add"){
-		opcode="0110011", funct3="000", funct7="0000000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
-	else if(instruction=="and"){
-		opcode="0110011", funct3="111", funct7="0000000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+	if(instruction=="add")
+		opcode="0110011", funct3="000", funct7="0000000", type="R";
+
+	else if(instruction=="and")
+		opcode="0110011", funct3="111", funct7="0000000", type="R";
+		
 	else if(instruction=="or")
-	{
-		opcode="0110011", funct3="110", funct7="0000000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="110", funct7="0000000", type ="R";
+
 	else if(instruction=="sll")
-	{
-		opcode="0110011", funct3="001", funct7="0000000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="001", funct7="0000000", type ="R";
+		
 	else if(instruction=="slt")
-	{
-		opcode="0110011", funct3="010", funct7="0000000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="010", funct7="0000000", type ="R";
+
 	else if(instruction=="sltu")
-	{
-		opcode="0110011", funct3="011", funct7="0000000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="011", funct7="0000000", type ="R";
+
 	else if(instruction=="sra")
-	{
-		opcode="0110011", funct3="101", funct7="0100000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="101", funct7="0100000", type ="R";
+	
 	else if(instruction=="srl")
-	{
-		opcode="0110011", funct3="101", funct7="0000000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="101", funct7="0000000", type ="R";
+	
 	else if(instruction=="sub")
-	{
-		opcode="0110011", funct3="000", funct7="0100000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="000", funct7="0100000", type ="R";
+	
 	else if(instruction=="xor")
-	{
-		opcode="0110011", funct3="100", funct7="0000000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="100", funct7="0000000", type ="R";
+	
 	else if(instruction=="mul")
-	{
-		opcode="0110011", funct3="000", funct7="0000001";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="000", funct7="0000001", type ="R";
+		
 	else if(instruction=="mulh")
-	{
-		opcode="0110011", funct3="001", funct7="0000001";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="001", funct7="0000001", type ="R";
+		
 	else if(instruction=="mulhsu")
-	{
-		opcode="0110011", funct3="010", funct7="0000001";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="010", funct7="0000001", type ="R";
+		
 	else if(instruction=="mulhu")
-	{
-		opcode="0110011", funct3="011", funct7="0000001";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="011", funct7="0000001", type ="R";
+	
 	else if(instruction=="div")
-	{
-		opcode="0110011", funct3="100", funct7="0000001";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="100", funct7="0000001", type ="R";
+		
 	else if(instruction=="divu")
-	{
-		opcode="0110011", funct3="101", funct7="0000001";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="101", funct7="0000001", type ="R";
+		
 	else if(instruction=="rem")
-	{
-		opcode="0110011", funct3="110", funct7="0000001";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
+		opcode="0110011", funct3="110", funct7="0000001", type ="R";
+		
 	else if(instruction=="remu")
-	{
-		opcode="0110011", funct3="111", funct7="0000001";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-	}
-	else if(instruction=="addw"){
-		opcode="0111011",funct3="000";funct7="0000000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;		
-	}
-	else if(instruction=="subw"){
-		opcode="0111011",funct3="000";funct7="0100000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;		
-	}
-	else if(instruction=="sllw"){
-		opcode="0111011",funct3="001";funct7="0000000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;		
-	}
-	else if(instruction=="srlw"){
-		opcode="0111011",funct3="101";funct7="0000000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;		
-	}
-	else if(instruction=="sraw"){
-		opcode="0111011",funct3="101";funct7="0100000";
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;		
-	}
+		opcode="0110011", funct3="111", funct7="0000001", type ="R";
+		
+	else if(instruction=="addw")
+		opcode="0111011", funct3="000", funct7="0000000", type  ="R";
+		
+	else if(instruction=="subw")
+		opcode="0111011", funct3="000", funct7="0100000", type ="R";
+		
+	else if(instruction=="sllw")
+		opcode="0111011", funct3="001", funct7="0000000", type ="R";
+		
+	else if(instruction=="srlw")
+		opcode="0111011", funct3="101", funct7="0000000", type ="R";
+		
+	else if(instruction=="sraw")
+		opcode="0111011", funct3="101", funct7="0100000", type ="R";		
+
 	else
 	{
 
 	}
-	
+	if(type=="R")
+	{
+		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
+		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
+	}
 	
 	machineCodeInstructionHex="0x"+bin2Hex(machineCodeInstructionBinary);
 	return machineCodeInstructionHex;
