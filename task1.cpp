@@ -1,5 +1,6 @@
 //Task 1: Assembly Code to Machine Code
 #include <bits/stdc++.h>
+#include<unordered_map>
 #define lli long long int
 using namespace std;
 
@@ -110,6 +111,71 @@ void otherDataFieldRtype(string &line, string &machineCodeInstructionBinary, str
 }
 //End of function otherDataFieldRtype
 
+//Function to extract rs, rd and immediate values
+void otherDataFieldItype(string &line, string &rs1, string &immediate, string &rd, int i, int ISubType){
+	int temp = 0;
+	// read destination register
+	while (line[i] != 'x'){
+		i++;
+	}
+	i++;
+	while (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
+		temp = temp * 10 + (int)(line[i++] - '0');
+	rd = dec2Binary(temp, 5);
+
+	temp = 0;
+	if(ISubType == 0 || ISubType == 2){ //immediate value
+
+		temp = 0;
+		//read source register
+		while (line[i] != 'x'){
+			i++;
+		}
+		i++;
+		while (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
+			temp = temp * 10 + (int)(line[i++] - '0');
+		rs1 = dec2Binary(temp, 5);
+
+		// skip non numeric values
+		while (line[i]!='0' && line[i] != '1' && line[i] != '2' && line[i] != '3' && line[i] != '4' && line[i] != '5' && line[i] != '6' && line[i] != '7' && line[i] != '8' && line[i] != '9'){
+			i++;
+		}
+		temp = 0;
+		// read offset
+		while (i < line.size() && (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')){
+			// cout<<i<<" "<<line[i]<<endl;
+			temp = temp * 10 + (int)(line[i++] - '0');
+		}
+
+		if(ISubType == 0)
+			immediate = dec2Binary(temp, 12);
+		else
+			immediate = dec2Binary(temp ,5);
+	}
+	else if(ISubType == 1){	//with offset
+		temp = 0;
+		//skip any non numeric character
+		while (line[i] != '1' && line[i] != '2' && line[i] != '3' && line[i] != '4' && line[i] != '5' && line[i] != '6' && line[i] != '7' && line[i] != '8' && line[i] != '9' && line[i]!='0'){
+			i++;
+		}
+		//calculate offset
+		while (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
+			temp = temp * 10 + (int)(line[i++] - '0');
+		immediate = dec2Binary(temp, 12);
+
+		//read source register
+		while(line[i]!='x'){
+			i++;
+		}
+		i++;
+		temp = 0;
+		
+		while (i<line.size() && (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9'))
+			temp = temp * 10 + (int)(line[i++] - '0');
+		rs1 = dec2Binary(temp, 5);
+
+	}
+}
 //Verified: asm2mc working correctly
 /*Assembly to Machine Code
 Input: each line of assembly code
@@ -122,6 +188,7 @@ string asm2mc(string line){
 	string immediate="";
 	string rs1="", rs2="", rd=""; 
 	string type="";
+	int ISubType = 0;//subtypes for I-type instructions 0 for addi etc, 1 for instruction with offset, 2 for shift instructions
 
 	int i=0;
 	while(line[i]!=' ')
@@ -194,7 +261,106 @@ string asm2mc(string line){
 		opcode="0111011", funct3="101", funct7="0000000", type ="R";
 		
 	else if(instruction=="sraw")
-		opcode="0111011", funct3="101", funct7="0100000", type ="R";		
+		opcode="0111011", funct3="101", funct7="0100000", type ="R";
+	
+	else if(instruction == "lb")
+		opcode = "0000011", funct3 = "000", type = "I", ISubType = 1;
+
+	else if (instruction == "lh")
+		opcode = "0000011", funct3 = "001", type = "I", ISubType = 1;
+
+	else if (instruction == "lw")
+		opcode = "0000011", funct3 = "010", type = "I", ISubType = 1;
+	
+	else if (instruction == "ld")
+		opcode = "0000011", funct3 = "011", type = "I", ISubType = 1;
+
+	else if (instruction == "lbu")
+		opcode = "0000011", funct3 = "100", type = "I", ISubType = 1;
+
+	else if (instruction == "lhu")
+		opcode = "0000011", funct3 = "101", type = "I", ISubType = 1;
+
+	else if (instruction == "lwu")
+		opcode = "0000011", funct3 = "110", type = "I", ISubType = 1;
+
+	else if (instruction == "fence")
+		opcode = "0001111", funct3 = "000", type = "I";
+
+	else if (instruction == "fence.i")
+		opcode = "0001111", funct3 = "001", type = "I";
+
+	else if (instruction == "addi")
+		opcode = "0010011", funct3 = "000", type = "I";
+	
+	else if (instruction == "slli")
+		opcode = "0010011", funct3 = "001",funct7 = "0000000", type = "I", ISubType = 2;
+
+	else if (instruction == "srli")
+		opcode = "0010011", funct3 = "101", funct7 = "0000000", type = "I", ISubType = 2;
+
+	else if (instruction == "srai")
+		opcode = "0010011", funct3 = "001", funct7 = "0100000", type = "I", ISubType = 2;
+
+	else if (instruction == "slliw")
+		opcode = "0011011", funct3 = "001", funct7 = "0000000", type = "I", ISubType = 2;
+
+	else if (instruction == "srliw")
+		opcode = "0011011", funct3 = "101", funct7 = "0000000", type = "I", ISubType = 2;
+
+	else if (instruction == "sraiw")
+		opcode = "0011011", funct3 = "101", funct7 = "0100000", type = "I", ISubType = 2;
+
+	else if (instruction == "slti")
+		opcode = "0010011", funct3 = "001", type = "I";
+
+	else if (instruction == "sltiu")
+		opcode = "0010011", funct3 = "011", type = "I";
+
+	else if (instruction == "xori")
+		opcode = "0010011", funct3 = "100", type = "I";
+
+	else if (instruction == "slti")
+		opcode = "0010011", funct3 = "001", type = "I";
+
+	else if (instruction == "ori")
+		opcode = "0010011", funct3 = "110", type = "I";
+	
+	else if (instruction == "andi")
+		opcode = "0010011", funct3 = "111", type = "I";
+
+	else if (instruction == "addiw")
+		opcode = "0010011", funct3 = "000", type = "I";
+
+	else if (instruction == "sd")
+		opcode = "0010011", funct3 = "011", type = "I";
+
+	else if (instruction == "jalr")
+		opcode = "1100111", funct3 = "000", type = "I", ISubType = 1;
+
+	else if (instruction == "CSRRW")
+		opcode = "1110011", funct3 = "001", type = "I";
+
+	else if (instruction == "CSRRS")
+		opcode = "1110011", funct3 = "010", type = "I";
+
+	else if (instruction == "CSRRC")
+		opcode = "1110011", funct3 = "011", type = "I";
+
+	else if (instruction == "CSRRWI")
+		opcode = "1110011", funct3 = "101", type = "I";
+
+	else if (instruction == "CSRRSI")
+		opcode = "1110011", funct3 = "110", type = "I";
+
+	else if (instruction == "CSRRCI")
+		opcode = "1110011", funct3 = "111", type = "I";
+	
+	else if (instruction == "ecall")
+		opcode = "1110011", funct3 = "000", immediate = "000000000000", type = "I";
+
+	else if (instruction == "ebreak")
+		opcode = "1110011", funct3 = "000", immediate = "000000000001", type = "I";
 
 	else
 	{
@@ -205,7 +371,27 @@ string asm2mc(string line){
 		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
 		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
 	}
-	
+
+	else if(type == "I"){
+		if(instruction == "ecall"){
+			machineCodeInstructionBinary = "00000000000000000000000001110011";
+		}
+
+		else if(instruction == "ebreak"){
+			machineCodeInstructionBinary = "00000000000100000000000001110011";
+		}
+		else{
+			otherDataFieldItype(line, rs1, immediate, rd, i, ISubType);
+			if(ISubType == 0 || ISubType == 1){
+				machineCodeInstructionBinary = immediate + rs1 + funct3 + rd + opcode;
+			}
+			else if(ISubType == 2){
+				machineCodeInstructionBinary = funct7 + immediate + rs1 + funct3 + rd + opcode;
+			}
+		}
+		
+	}
+
 	machineCodeInstructionHex="0x"+bin2Hex(machineCodeInstructionBinary);
 	return machineCodeInstructionHex;
 }
@@ -222,12 +408,17 @@ int main(){
 
 	fstream fileReading;
 	fstream fileWriting;
-	fileReading.open("sample.asm");
+	fileReading.open("assemblyCode.asm");
 	fileWriting.open("sample_out.mc");
 
 	//To read input from Assembly Code File 
-	while(getline(fileReading,assemblyLine)){
+	while(getline(fileReading, assemblyLine)){
+		try{
 		machineLine=asm2mc(assemblyLine);
+		}
+		catch(exception e){
+			cout<<"HEY2";
+		}
 		binaryInstructionAddress=dec2Binary(instructionAddress, 32);
 		instructionAddress+=4;
 		hexInstructionAddress="0x"+bin2Hex(binaryInstructionAddress);
