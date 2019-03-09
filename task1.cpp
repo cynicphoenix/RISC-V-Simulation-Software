@@ -284,12 +284,6 @@ string asm2mc(string line){
 	else if (instruction == "lwu")
 		opcode = "0000011", funct3 = "110", type = "I", ISubType = 1;
 
-	else if (instruction == "fence")
-		opcode = "0001111", funct3 = "000", type = "I";
-
-	else if (instruction == "fence.i")
-		opcode = "0001111", funct3 = "001", type = "I";
-
 	else if (instruction == "addi")
 		opcode = "0010011", funct3 = "000", type = "I";
 	
@@ -338,29 +332,8 @@ string asm2mc(string line){
 	else if (instruction == "jalr")
 		opcode = "1100111", funct3 = "000", type = "I", ISubType = 1;
 
-	else if (instruction == "CSRRW")
-		opcode = "1110011", funct3 = "001", type = "I";
 
-	else if (instruction == "CSRRS")
-		opcode = "1110011", funct3 = "010", type = "I";
 
-	else if (instruction == "CSRRC")
-		opcode = "1110011", funct3 = "011", type = "I";
-
-	else if (instruction == "CSRRWI")
-		opcode = "1110011", funct3 = "101", type = "I";
-
-	else if (instruction == "CSRRSI")
-		opcode = "1110011", funct3 = "110", type = "I";
-
-	else if (instruction == "CSRRCI")
-		opcode = "1110011", funct3 = "111", type = "I";
-	
-	else if (instruction == "ecall")
-		opcode = "1110011", funct3 = "000", immediate = "000000000000", type = "I";
-
-	else if (instruction == "ebreak")
-		opcode = "1110011", funct3 = "000", immediate = "000000000001", type = "I";
 
 	else
 	{
@@ -373,23 +346,14 @@ string asm2mc(string line){
 	}
 
 	else if(type == "I"){
-		if(instruction == "ecall"){
-			machineCodeInstructionBinary = "00000000000000000000000001110011";
-		}
+		otherDataFieldItype(line, rs1, immediate, rd, i, ISubType);
 
-		else if(instruction == "ebreak"){
-			machineCodeInstructionBinary = "00000000000100000000000001110011";
+		if(ISubType == 0 || ISubType == 1){
+			machineCodeInstructionBinary = immediate + rs1 + funct3 + rd + opcode;
 		}
-		else{
-			otherDataFieldItype(line, rs1, immediate, rd, i, ISubType);
-			if(ISubType == 0 || ISubType == 1){
-				machineCodeInstructionBinary = immediate + rs1 + funct3 + rd + opcode;
-			}
-			else if(ISubType == 2){
-				machineCodeInstructionBinary = funct7 + immediate + rs1 + funct3 + rd + opcode;
-			}
+		else if(ISubType == 2){
+			machineCodeInstructionBinary = funct7 + immediate + rs1 + funct3 + rd + opcode;
 		}
-		
 	}
 
 	machineCodeInstructionHex="0x"+bin2Hex(machineCodeInstructionBinary);
@@ -409,16 +373,11 @@ int main(){
 	fstream fileReading;
 	fstream fileWriting;
 	fileReading.open("assemblyCode.asm");
-	fileWriting.open("sample_out.mc");
+	fileWriting.open("machineCode.mc");
 
 	//To read input from Assembly Code File 
 	while(getline(fileReading, assemblyLine)){
-		try{
 		machineLine=asm2mc(assemblyLine);
-		}
-		catch(exception e){
-			cout<<"HEY2";
-		}
 		binaryInstructionAddress=dec2Binary(instructionAddress, 32);
 		instructionAddress+=4;
 		hexInstructionAddress="0x"+bin2Hex(binaryInstructionAddress);
