@@ -116,6 +116,7 @@ Input: each line of assembly code
 Output: equivalent machine code(hexadecimal string)*/
 string asm2mc(string line){
 	string instruction="";//first word of each assembly line
+	string type="";//instruction type
 	string machineCodeInstructionBinary="";
 	string machineCodeInstructionHex="";
 	string opcode="",funct3="",funct7="";
@@ -125,18 +126,33 @@ string asm2mc(string line){
 	int i=0;
 	while(line[i]!=' ')
 		instruction+=line[i++];
-
-	if(instruction=="add"){
-		opcode="0110011", funct3="000", funct7="0000000";
+	
+	//match instruction to write predefined values like opcode, funct7 etc
+	//all R types here:
+	if(instruction=="add")
+		opcode="0110011", funct3="000", funct7="0000000", type="R";
+	else if(instruction=="sub")
+		opcode="", funct3="", funct7="", type="";
+	
+	
+	
+	
+	//all I type here:
+	
+	
+	
+	
+	
+	
+	
+	//match instruction type to get other data fields like rs1, rs2, rd etc
+	if(type=="R"){
 		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
 		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
 	}
-	else if(instruction=="sub"){
-		opcode="",funct3="";funct7="";
-		
+	else if(type=="I"){
 		
 	}
-	
 	
 	machineCodeInstructionHex="0x"+bin2Hex(machineCodeInstructionBinary);
 	return machineCodeInstructionHex;
