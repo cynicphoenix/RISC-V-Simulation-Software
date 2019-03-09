@@ -81,12 +81,20 @@ string bin2Hex(string bin){
 
 
 
-
+//Verified: otherDataFieldRtype working correctly
 //Function to extract RS1, RS2 & RD of R type instructions
 void otherDataFieldRtype(string &line, string &machineCodeInstructionBinary, string &rs1, string &rs2, string &rd, int i){
 	int temp=0;
 	while(line[i]!='x')
 			i++;
+	i++;
+	while(line[i]!=',')
+		temp=temp*10+(int)(line[i++]-'0');
+	rd=dec2Binary(temp, 5);
+
+	temp=0;
+	while(line[i]!='x')
+		i++;
 	i++;
 	while(line[i]!=',')
 		temp=temp*10+(int)(line[i++]-'0');
@@ -96,25 +104,18 @@ void otherDataFieldRtype(string &line, string &machineCodeInstructionBinary, str
 	while(line[i]!='x')
 		i++;
 	i++;
-	while(line[i]!=',')
-		temp=temp*10+(int)(line[i++]-'0');
-	rs2=dec2Binary(temp, 5);
-
-	temp=0;
-	while(line[i]!='x')
-		i++;
-	i++;
 	while(line[i]=='0' || line[i]=='1' || line[i]=='2' || line[i]=='3' || line[i]=='4' || line[i]=='5' || line[i]=='6' || line[i]=='7' || line[i]=='8' || line[i]=='9')
 		temp=temp*10+(int)(line[i++]-'0');
-	rd=dec2Binary(temp, 5);
+	rs2=dec2Binary(temp, 5);
 }
 //End of function otherDataFieldRtype
 
+//Verified: asm2mc working correctly
 /*Assembly to Machine Code
 Input: each line of assembly code
 Output: equivalent machine code(hexadecimal string)*/
 string asm2mc(string line){
-	string instruction="";
+	string instruction="";//first word of each assembly line
 	string machineCodeInstructionBinary="";
 	string machineCodeInstructionHex="";
 	string opcode="",funct3="",funct7="";
@@ -129,19 +130,20 @@ string asm2mc(string line){
 		opcode="0110011", funct3="000", funct7="0000000";
 		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
 		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
-		machineCodeInstructionHex=bin2Hex(machineCodeInstructionBinary);
 	}
-	else if(){
-
+	else if(instruction=="sub"){
+		opcode="",funct3="";funct7="";
+		
+		
 	}
-
-
-
+	
+	
+	machineCodeInstructionHex="0x"+bin2Hex(machineCodeInstructionBinary);
 	return machineCodeInstructionHex;
 }
 //End of function asm2mc
 
-
+////Verified: main input-output stream working correctly
 //Main File : File Read & Write
 int main(){
 	lli instructionAddress=0;
@@ -153,14 +155,14 @@ int main(){
 	fstream fileReading;
 	fstream fileWriting;
 	fileReading.open("assemblyCode.asm");
-	fileWriting.open("machineCode.mc")
+	fileWriting.open("machineCode.mc");
 
 	//To read input from Assembly Code File 
 	while(getline(fileReading,assemblyLine)){
 		machineLine=asm2mc(assemblyLine);
-		binaryInstructionAddress=dec2Binary(instructionAddress);
+		binaryInstructionAddress=dec2Binary(instructionAddress, 32);
 		instructionAddress+=4;
-		hexInstructionAddress=bin2Hex(binaryInstructionAddress);
+		hexInstructionAddress="0x"+bin2Hex(binaryInstructionAddress);
 		machineLine=hexInstructionAddress+" "+machineLine;
 		fileWriting<<machineLine<<endl;
 	}
