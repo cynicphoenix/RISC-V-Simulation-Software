@@ -3,17 +3,17 @@
 #define lli long long int
 using namespace std;
 
-//Function to convert integer number to hexadecimal string 
+//Function to convert integer number to binary string 
 string dec2Binary(lli decimalNum, int length){
 	int i=0;
 	string binaryNum="";
 	while(length--)
 		binaryNum=binaryNum+'0';
-    while(decimalNum>0){
-        binaryNum[i]=decimalNum%2; 
-        decimalNum=decimalNum/2; 
-        i++; 
-    }
+    	while(decimalNum>0){
+        	binaryNum[i]=decimalNum%2; 
+        	decimalNum=decimalNum/2; 
+        	i++; 
+    	}
     return binaryNum;
 } 
 //End of function dec2Binary
