@@ -74,13 +74,6 @@ string bin2Hex(string bin){
 }
 //End of function bin2hex
 
-
-
-
-//Data Values on Stack
-
-
-
 //Verified: otherDataFieldRtype working correctly
 //Function to extract RS1, RS2 & RD of R type instructions
 void otherDataFieldRtype(string &line, string &machineCodeInstructionBinary, string &rs1, string &rs2, string &rd, int i){
