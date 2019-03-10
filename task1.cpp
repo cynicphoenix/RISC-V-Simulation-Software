@@ -531,13 +531,14 @@ int main(){
 
 	//To read input from Assembly Code File 
 	while(getline(fileReading, assemblyLine)){
+		machineLine=asm2mc(assemblyLine, currentLineNumber, labelArray);
 		if(machineLine!="labelDetected"){
-			machineLine=asm2mc(assemblyLine, currentLineNumber, labelArray);
 			binaryInstructionAddress=dec2Binary(instructionAddress, 32);
 			instructionAddress+=4;
 			hexInstructionAddress="0x"+bin2Hex(binaryInstructionAddress);
 			machineLine=hexInstructionAddress+" "+machineLine;
 			fileWriting<<machineLine<<endl;
+			currentLineNumber++;
 		}
 	}
 	fileWriting.close();
