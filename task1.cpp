@@ -176,6 +176,28 @@ void otherDataFieldItype(string &line, string &rs1, string &immediate, string &r
 
 	}
 }
+void otherDataFieldStype(string &line, string &rs2, string &immediate, string &rs1, int i)
+{
+	int temp = 0;
+	// read destination register
+	while (line[i] != 'x'){
+		i++;
+	}
+	i++;
+	while (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
+		temp = temp * 10 + (int)(line[i++] - '0');
+	rs2 = dec2Binary(temp, 5);
+	i++;
+	temp=0;
+	while(line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
+		temp = temp*10 + (int)(line[i++]-'0');
+	immediate = dec2Binary(temp,12);
+	i+=2;
+	temp=0;
+	while(line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
+		temp = temp*10 + (int)(line[i++]-'0');
+	rs1 = dec2Binary(temp,5);
+}
 //Verified: asm2mc working correctly
 /*Assembly to Machine Code
 Input: each line of assembly code
@@ -332,6 +354,14 @@ string asm2mc(string line){
 	else if (instruction == "jalr")
 		opcode = "1100111", funct3 = "000", type = "I", ISubType = 1;
 
+	else if(instruction == "sw")
+		opcode = "0100011", funct3 = "010", type = "S";
+
+	else if(instruction == "sh")
+		opcode = "0100011", funct3 = "001", type = "S";
+
+	else if(instruction == "sb")
+		opcode = "0100011", funct3 = "000", type = "S";
 
 
 
@@ -354,6 +384,13 @@ string asm2mc(string line){
 		else if(ISubType == 2){
 			machineCodeInstructionBinary = funct7 + immediate + rs1 + funct3 + rd + opcode;
 		}
+	}
+	else if(type=="S")
+	{
+		otherDataFieldStype(line,rs2,immediate,rs1,i);
+		string imm_4_0 = immediate.substr(7,5);
+		string imm_11_5 = immediate.substr(0,7);
+		machineCodeInstructionBinary = imm_11_5+rs2+rs1+funct3+imm_4_0+opcode;
 	}
 
 	machineCodeInstructionHex="0x"+bin2Hex(machineCodeInstructionBinary);
