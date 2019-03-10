@@ -488,7 +488,7 @@ void assignLineNumberToLabel(vector<labelData> &labelArray){
 	string line="";
 
 	fstream fileReading;
-	fileReading.open("sample.asm");
+	fileReading.open("assemblyCode.asm");
 	while(getline(fileReading,line)){
 		flag=0;
 		int i=0;
