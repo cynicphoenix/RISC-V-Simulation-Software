@@ -4,18 +4,40 @@
 #define lli long long int
 using namespace std;
 
-//Verified: dec2Binary working correctly
+//User defined data type: to store line no of each label
+struct labelData{
+	string label;
+	lli lineNumber;
+};
+
 //Function to convert integer number to binary string 
 string dec2Binary(lli decimalNum, int length){
 	int i=0,l=length;
+	lli positiveDecimalNum=abs(decimalNum);
 	string binaryNum="";
 	while(l--)
 		binaryNum=binaryNum+"0";
-    while(decimalNum>0){
-       	binaryNum[length-i-1]=decimalNum%2+'0'; 
-       	decimalNum=decimalNum/2; 
-       	i++; 
-    }
+	while(positiveDecimalNum>0){
+       		binaryNum[length-i-1]=positiveDecimalNum%2+'0'; 
+       		positiveDecimalNum=positiveDecimalNum/2; 
+       		i++; 
+    	}
+	if(decimalNum<0){
+    		for(int j=0;j<length;j++)
+    			if(binaryNum[j]=='0')
+    				binaryNum[j]='1';
+    			else
+    				binaryNum[j]='0';
+    		int carry=1;
+    		for(int j=length-1;j>=0;j--){
+    			if(carry==1 && binaryNum[j]=='0'){
+    				binaryNum[j]='1';
+				break;
+			}
+    			else if(carry==1 && binaryNum[j]=='1')
+    				binaryNum[j]='0';
+		}
+	}
     return binaryNum;
 }
 //End of function dec2Binary
@@ -75,14 +97,6 @@ string bin2Hex(string bin){
 }
 //End of function bin2hex
 
-
-
-
-//Data Values on Stack
-
-
-
-//Verified: otherDataFieldRtype working correctly
 //Function to extract RS1, RS2 & RD of R type instructions
 void otherDataFieldRtype(string &line, string &machineCodeInstructionBinary, string &rs1, string &rs2, string &rd, int i){
 	int temp=0;
@@ -176,8 +190,10 @@ void otherDataFieldItype(string &line, string &rs1, string &immediate, string &r
 
 	}
 }
-void otherDataFieldStype(string &line, string &rs2, string &immediate, string &rs1, int i)
-{
+//End of otherDataFieldItype
+
+//Function to extract data fied of S type
+void otherDataFieldStype(string &line, string &rs2, string &immediate, string &rs1, int i){
 	int temp = 0;
 	// read destination register
 	while (line[i] != 'x'){
@@ -198,11 +214,54 @@ void otherDataFieldStype(string &line, string &rs2, string &immediate, string &r
 		temp = temp*10 + (int)(line[i++]-'0');
 	rs1 = dec2Binary(temp,5);
 }
-//Verified: asm2mc working correctly
+//End of otherDataFieldStype
+
+//Function to extract values of SB type
+void otherDataFieldSBtype(string &line, string &immediate, string &rs1, string &rs2, lli i, lli currentLineNumber, vector<labelData> &labelArray){
+	int temp=0, flag=0;//To check whether such label exist or not
+	lli labelOffset;
+	string label="";
+	while(line[i]!='x')
+			i++;
+	i++;
+	while(line[i]!=',')
+		temp=temp*10+(int)(line[i++]-'0');
+	rs1=dec2Binary(temp, 5);
+
+	temp=0;
+	while(line[i]!='x')
+		i++;
+	i++;
+	while(line[i]!=',')
+		temp=temp*10+(int)(line[i++]-'0');
+	rs2=dec2Binary(temp, 5);
+
+	temp=0;
+	i++;
+	while(line[i]==' ')
+		i++;
+	while(i<line.length()){
+		if(line[i]==' ') 
+			break;
+		label+=line[i++]; 
+	}
+
+	for(i=0;i<labelArray.size();i++)
+		if(labelArray[i].label==label){
+			labelOffset=(labelArray[i].lineNumber-currentLineNumber)*4;
+			immediate=dec2Binary(labelOffset, 12);
+			flag=1;
+		}
+
+	if(flag==0)
+		cout<<"ERROR: Incorrect label"<<endl;
+}
+//End of otherDataFieldSBtype
+
 /*Assembly to Machine Code
-Input: each line of assembly code
+Input: each line of assembly code, line number, label array
 Output: equivalent machine code(hexadecimal string)*/
-string asm2mc(string line){
+string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray){
 	string instruction="";//first word of each assembly line
 	string machineCodeInstructionBinary="";
 	string machineCodeInstructionHex="";
@@ -353,7 +412,7 @@ string asm2mc(string line){
 
 	else if (instruction == "jalr")
 		opcode = "1100111", funct3 = "000", type = "I", ISubType = 1;
-
+	
 	else if(instruction == "sw")
 		opcode = "0100011", funct3 = "010", type = "S";
 
@@ -363,18 +422,33 @@ string asm2mc(string line){
 	else if(instruction == "sb")
 		opcode = "0100011", funct3 = "000", type = "S";
 
+	else if(instruction=="beq")
+		opcode="1100011",funct3="000",type="SB";
 
+	else if(instruction=="bne")
+		opcode="1100011",funct3="001",type="SB";
+
+	else if(instruction=="blt")
+		opcode="1100011",funct3="100",type="SB";
+
+	else if(instruction=="bge")
+		opcode="1100011",funct3="101",type="SB";
+
+	else if(instruction=="bltu")
+		opcode="1100011",funct3="110",type="SB";
+
+	else if(instruction=="bgeu")
+		opcode="1100011",funct3="111",type="SB";
 
 	else
-	{
+		type="LABEL";
 
-	}
-	if(type=="R")
-	{
+	//To extract other data field according to instruction type
+	if(type=="R"){
 		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
 		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
 	}
-
+	
 	else if(type == "I"){
 		otherDataFieldItype(line, rs1, immediate, rd, i, ISubType);
 
@@ -385,27 +459,70 @@ string asm2mc(string line){
 			machineCodeInstructionBinary = funct7 + immediate + rs1 + funct3 + rd + opcode;
 		}
 	}
-	else if(type=="S")
-	{
+	
+	else if(type=="S"){
 		otherDataFieldStype(line,rs2,immediate,rs1,i);
 		string imm_4_0 = immediate.substr(7,5);
 		string imm_11_5 = immediate.substr(0,7);
 		machineCodeInstructionBinary = imm_11_5+rs2+rs1+funct3+imm_4_0+opcode;
 	}
+	
+	else if(type=="SB"){
+		otherDataFieldSBtype(line, immediate, rs1, rs2, i, currentLineNumber, labelArray);
+		machineCodeInstructionBinary=immediate[0]+immediate.substr(1,6)+rs2+rs1+funct3+immediate.substr(7,4)+immediate[0]+opcode;
+	}
+	
+	else if(type=="LABEL")
+		return "labelDetected";
 
 	machineCodeInstructionHex="0x"+bin2Hex(machineCodeInstructionBinary);
 	return machineCodeInstructionHex;
 }
 //End of function asm2mc
 
-////Verified: main input-output stream working correctly
+/*Keep track of labels in a vector
+labelArray stores label & their line number */
+void assignLineNumberToLabel(vector<labelData> &labelArray){
+	lli lineNumber=0, flag=0;
+	labelData tempLabel;
+	string line="";
+
+	fstream fileReading;
+	fileReading.open("sample.asm");
+	while(getline(fileReading,line)){
+		flag=0;
+		int i=0;
+		string label="";
+	
+		while(line[i]!=' '){
+			if(line[i]==':'){
+				flag=1;
+				break;
+			}
+			label+=line[i++];
+		}
+		
+		if(flag==1){
+			tempLabel.label=label;
+			tempLabel.lineNumber=lineNumber;
+			labelArray.push_back(tempLabel);
+		}
+		lineNumber++;
+	}
+	fileReading.close();
+}
+//End of assignLineNumberToLabel
+
 //Main File : File Read & Write
 int main(){
-	lli instructionAddress=0;
+	lli instructionAddress=0, currentLineNumber=0;
 	string hexInstructionAddress;
 	string binaryInstructionAddress;
 	string assemblyLine;
 	string machineLine;
+	
+	vector<labelData> labelArray;
+	assignLineNumberToLabel(labelArray);
 
 	fstream fileReading;
 	fstream fileWriting;
@@ -414,12 +531,14 @@ int main(){
 
 	//To read input from Assembly Code File 
 	while(getline(fileReading, assemblyLine)){
-		machineLine=asm2mc(assemblyLine);
-		binaryInstructionAddress=dec2Binary(instructionAddress, 32);
-		instructionAddress+=4;
-		hexInstructionAddress="0x"+bin2Hex(binaryInstructionAddress);
-		machineLine=hexInstructionAddress+" "+machineLine;
-		fileWriting<<machineLine<<endl;
+		if(machineLine!="labelDetected"){
+			machineLine=asm2mc(assemblyLine, currentLineNumber, labelArray);
+			binaryInstructionAddress=dec2Binary(instructionAddress, 32);
+			instructionAddress+=4;
+			hexInstructionAddress="0x"+bin2Hex(binaryInstructionAddress);
+			machineLine=hexInstructionAddress+" "+machineLine;
+			fileWriting<<machineLine<<endl;
+		}
 	}
 	fileWriting.close();
 	fileReading.close();
