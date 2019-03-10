@@ -258,6 +258,34 @@ void otherDataFieldSBtype(string &line, string &immediate, string &rs1, string &
 }
 //End of otherDataFieldSBtype
 
+void otherDataFieldUJtype(string &line,string &immediate, string &rd, lli i, lli currentLineNumber, vector<labelData> &labelArray){
+	int flag=0;//To check whether such label exist or not
+	lli labelOffset;
+	string label="";
+	
+	while(line[i]!=',')
+		i++;	
+	i++;
+	while(line[i]==' ')
+		i++;
+	while(i<line.length()){
+		if(line[i]==' ') 
+			break;
+		label+=line[i++]; 
+	}
+
+	for(i=0;i<labelArray.size();i++)
+		if(labelArray[i].label==label){
+			labelOffset=(labelArray[i].lineNumber-currentLineNumber)*4;
+			immediate=dec2Binary(labelOffset, 12);
+			flag=1;
+		}
+
+	if(flag==0)
+		cout<<"ERROR: Incorrect label"<<endl;
+}
+
+
 /*Assembly to Machine Code
 Input: each line of assembly code, line number, label array
 Output: equivalent machine code(hexadecimal string)*/
@@ -439,7 +467,10 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 
 	else if(instruction=="bgeu")
 		opcode="1100011",funct3="111",type="SB";
-
+	
+	else if(instruction=="jal")
+		opcode="1101111",type="UJ";
+	
 	else
 		type="LABEL";
 
@@ -470,6 +501,10 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 	else if(type=="SB"){
 		otherDataFieldSBtype(line, immediate, rs1, rs2, i, currentLineNumber, labelArray);
 		machineCodeInstructionBinary=immediate[0]+immediate.substr(1,6)+rs2+rs1+funct3+immediate.substr(7,4)+immediate[0]+opcode;
+	}
+	else if(type=="UJ"){
+		otherDataFieldUJtype(line,immediate,rd,i,currentLineNumber,labelArray);
+		machineCodeInstructionBinary = immediate+rd+opcode;
 	}
 	
 	else if(type=="LABEL")
