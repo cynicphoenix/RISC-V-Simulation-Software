@@ -258,11 +258,18 @@ void otherDataFieldSBtype(string &line, string &immediate, string &rs1, string &
 }
 //End of otherDataFieldSBtype
 
-void otherDataFieldUJtype(string &line,string &immediate, string &rd, lli i, lli currentLineNumber, vector<labelData> &labelArray){
+void otherDataFieldUJtype(string &line, string &immediate, string &rd, lli i, lli currentLineNumber, vector<labelData> &labelArray){
+	int temp=0;
 	int flag=0;//To check whether such label exist or not
 	lli labelOffset;
 	string label="";
-	
+	while(line[i]!='x')
+		i++;
+	i++;
+	while(line[i]!=',')
+		temp=temp*10+(int)(line[i++]-'0');
+	rd=dec2Binary(temp, 5);
+
 	while(line[i]!=',')
 		i++;	
 	i++;
@@ -277,12 +284,28 @@ void otherDataFieldUJtype(string &line,string &immediate, string &rd, lli i, lli
 	for(i=0;i<labelArray.size();i++)
 		if(labelArray[i].label==label){
 			labelOffset=(labelArray[i].lineNumber-currentLineNumber)*4;
-			immediate=dec2Binary(labelOffset, 12);
+			immediate=dec2Binary(labelOffset, 20);
 			flag=1;
 		}
-
 	if(flag==0)
 		cout<<"ERROR: Incorrect label"<<endl;
+}
+
+void otherDataFieldUtype(string &line,string &immediate,string &rd,lli i){
+	int temp=0;
+	while(line[i]!='x')
+		i++;
+	i++;
+	while(line[i]!=',')
+		temp=temp*10+(int)(line[i++]-'0');
+	rd=dec2Binary(temp, 5);
+	i++;
+	while(line[i]==' ')
+		i++;
+	temp=0;
+	while(line[i]=='0'|| line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
+		temp = temp * 10 + (int)(line[i++] - '0');
+	immediate=dec2Binary(temp,20);
 }
 
 
@@ -470,6 +493,12 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 	
 	else if(instruction=="jal")
 		opcode="1101111",type="UJ";
+
+	else if(instruction=="auipc")
+		opcode="0010111",type="U";
+
+	else if(instruction=="lui")
+		opcode="0110111", type="U";
 	
 	else
 		type="LABEL";
@@ -502,8 +531,14 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 		otherDataFieldSBtype(line, immediate, rs1, rs2, i, currentLineNumber, labelArray);
 		machineCodeInstructionBinary=immediate[0]+immediate.substr(1,6)+rs2+rs1+funct3+immediate.substr(7,4)+immediate[0]+opcode;
 	}
+
 	else if(type=="UJ"){
 		otherDataFieldUJtype(line,immediate,rd,i,currentLineNumber,labelArray);
+		machineCodeInstructionBinary = immediate[0]+immediate.substr(9,10)+immediate[8]+immediate.substr(0,8)+rd+opcode;
+	}
+
+	else if(type=="U"){
+		otherDataFieldUtype(line,immediate,rd,i);
 		machineCodeInstructionBinary = immediate+rd+opcode;
 	}
 	
@@ -541,6 +576,7 @@ void assignLineNumberToLabel(vector<labelData> &labelArray){
 			tempLabel.label=label;
 			tempLabel.lineNumber=lineNumber;
 			labelArray.push_back(tempLabel);
+			lineNumber--;
 		}
 		lineNumber++;
 	}
