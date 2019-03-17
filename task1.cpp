@@ -98,43 +98,134 @@ string bin2Hex(string bin){
 //End of function bin2hex
 
 //Function to extract RS1, RS2 & RD of R type instructions
-void otherDataFieldRtype(string &line, string &machineCodeInstructionBinary, string &rs1, string &rs2, string &rd, int i){
+string otherDataFieldRtype(string &line, string &machineCodeInstructionBinary, string &rs1, string &rs2, string &rd, int i){
 	int temp=0;
-	while(line[i]!='x')
-			i++;
+	while(line[i]!='x' && (i<=line.size()-1)){
+		if(line[i]!=' '){
+			cout<<"Invalid Register"<<endl;
+			return "error";
+		}
+		i++;
+	}
+	if(line[i]!='x'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
 	i++;
-	while(line[i]!=',')
+	if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	while(line[i]!=',' && line[i]!=' '){
+		if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+			cout<<"Invalid Register"<<endl;
+			return "error";
+		}
 		temp=temp*10+(int)(line[i++]-'0');
+	}
+	if(temp>31){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
 	rd=dec2Binary(temp, 5);
 
 	temp=0;
-	while(line[i]!='x')
+	while(line[i]!='x' && i<=line.size()-1){
+		if(line[i]!=' ' && line[i]!=','){
+			cout<<"Invalid Register"<<endl;
+			return "error";
+		}
 		i++;
+	}
+	if(line[i]!='x'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
 	i++;
-	while(line[i]!=',')
+	if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	while(line[i]!=','&&line[i]!=' '){
+		if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+			cout<<"Invalid Register"<<endl;
+			return "error";
+		}
 		temp=temp*10+(int)(line[i++]-'0');
+	}
+	if(temp>31){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
 	rs1=dec2Binary(temp, 5);
 
 	temp=0;
-	while(line[i]!='x')
+	while(line[i]!='x' && i<=line.size()-1){
+		if(line[i]!=' ' && line[i]!=','){
+			cout<<"Invalid Register"<<endl;
+			return "error";
+		}
 		i++;
+	}
+	if(line[i]!='x'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
 	i++;
-	while(line[i]=='0' || line[i]=='1' || line[i]=='2' || line[i]=='3' || line[i]=='4' || line[i]=='5' || line[i]=='6' || line[i]=='7' || line[i]=='8' || line[i]=='9')
+	if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+
+	while(i<=line.size()-1){
+		if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+			cout<<"Invalid Register"<<endl;
+			return "error";
+		}
 		temp=temp*10+(int)(line[i++]-'0');
+	}
+	if(temp>31){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
 	rs2=dec2Binary(temp, 5);
+	return "valid";
 }
 //End of function otherDataFieldRtype
 
 //Function to extract rs, rd and immediate values
-void otherDataFieldItype(string &line, string &rs1, string &immediate, string &rd, int i, int ISubType){
+string otherDataFieldItype(string &line, string &rs1, string &immediate, string &rd, int i, int ISubType){
 	int temp = 0;
+	int flag1=0;
 	// read destination register
-	while (line[i] != 'x'){
+	while (i<=line.size()-1 && line[i] != 'x'){
+		if(line[i]!=' '){
+			cout<<"Invalid Register"<<endl;
+			return "error";
+		}
 		i++;
 	}
+	if(line[i]!='x'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
 	i++;
-	while (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
-		temp = temp * 10 + (int)(line[i++] - '0');
+
+	if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	while(line[i]!=',' && line[i]!=' '){
+		if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+			cout<<"Invalid Register"<<endl;
+			return "error";
+		}
+		temp=temp*10+(int)(line[i++]-'0');
+	}
+	if(temp>31){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
 	rd = dec2Binary(temp, 5);
 
 	temp = 0;
@@ -142,103 +233,238 @@ void otherDataFieldItype(string &line, string &rs1, string &immediate, string &r
 
 		temp = 0;
 		//read source register
-		while (line[i] != 'x'){
+		while (i<=line.size()-1 && line[i] != 'x'){
+			if(line[i]!=' '&&line[i]!=','){
+				cout<<"Invalid Register"<<endl;
+				return "error";
+			}
 			i++;
 		}
 		i++;
-		while (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
+		if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+			cout<<"Invalid Register"<<endl;
+			return "error";
+		}
+		while (line[i]!=',' && line[i]!=' '){
+			if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+				cout<<"Invalid Register"<<endl;
+				return "error";
+			}
 			temp = temp * 10 + (int)(line[i++] - '0');
+		}
+		if(temp>31){
+			cout<<"Invalid Register"<<endl;
+			return "error";
+		}
 		rs1 = dec2Binary(temp, 5);
 
-		// skip non numeric values
-		while (line[i]!='0' && line[i] != '1' && line[i] != '2' && line[i] != '3' && line[i] != '4' && line[i] != '5' && line[i] != '6' && line[i] != '7' && line[i] != '8' && line[i] != '9'){
+		// skip spaces or commas
+		while (i<=line.size()-1 && (line[i]==' '||line[i]==',')){
 			i++;
 		}
+		//for negative offset
+		if(line[i]=='-'){
+			flag1=1;
+			i++;
+		}
+		//read offset
+		if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+			cout<<"Invalid Instruction Format"<<endl;
+			return "error";
+		}
 		temp = 0;
-		// read offset
-		while (i < line.size() && (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')){
-			// cout<<i<<" "<<line[i]<<endl;
+		while (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9'){
 			temp = temp * 10 + (int)(line[i++] - '0');
 		}
-
-		if(ISubType == 0)
+		if(flag1==1){
+			temp=-1*temp;
+		}
+		if(ISubType == 0){
+			if(temp<-2048||temp>2047){
+				cout<<"Out of Range Immediate"<<endl;
+				return "error";
+			}
 			immediate = dec2Binary(temp, 12);
-		else
+		}
+		else{
+			if(temp<-16||temp>15){
+				cout<<"Out of Range Immediate"<<endl;
+				return "error";
+			}
 			immediate = dec2Binary(temp ,5);
+		}
+		return "valid";
 	}
 	else if(ISubType == 1){	//with offset
 		temp = 0;
-		//skip any non numeric character
-		while (line[i] != '1' && line[i] != '2' && line[i] != '3' && line[i] != '4' && line[i] != '5' && line[i] != '6' && line[i] != '7' && line[i] != '8' && line[i] != '9' && line[i]!='0'){
+		//skip spaces and commas
+		while (line[i]==' '||line[i]==','){
 			i++;
 		}
 		//calculate offset
+		if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+			cout<<"Invalid Instruction Format"<<endl;
+			return "error";
+		}
 		while (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
 			temp = temp * 10 + (int)(line[i++] - '0');
+		if(temp<-2048||temp>2047){
+			cout<<"Out of Range Immediate"<<endl;
+			return "error";
+		}
 		immediate = dec2Binary(temp, 12);
 
 		//read source register
-		while(line[i]!='x'){
+		while(line[i]==' '){
 			i++;
 		}
+		if(line[i]!='('){
+			cout<<"Invalid Instruction Format"<<endl;
+			return "error";
+		}
 		i++;
+		if(line[i]!='x'){
+			cout<<"Invalid Instruction Format"<<endl;
+			return "error";
+		}
 		temp = 0;
-		
-		while (i<line.size() && (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9'))
+		i++;
+		if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+			cout<<"Invalid Instruction Format"<<endl;
+			return "error";
+		}
+		while (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
 			temp = temp * 10 + (int)(line[i++] - '0');
+		if(temp<-16 && temp>15){
+			cout<<"Out of Range Immediate"<<endl;
+			return "error";
+		}
 		rs1 = dec2Binary(temp, 5);
-
+		return "valid";
 	}
 }
 //End of otherDataFieldItype
 
 //Function to extract data fied of S type
-void otherDataFieldStype(string &line, string &rs2, string &immediate, string &rs1, int i){
+string otherDataFieldStype(string &line, string &rs2, string &immediate, string &rs1, int i){
 	int temp = 0;
-	// read destination register
-	while (line[i] != 'x'){
+	int flag1=0;
+	// skip spaces
+	while (line[i]==' '){
 		i++;
+	}
+	if(line[i]!='x'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
 	}
 	i++;
 	while (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
 		temp = temp * 10 + (int)(line[i++] - '0');
+	if(temp>31){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
 	rs2 = dec2Binary(temp, 5);
-	i++;
+	while(line[i]==' '||line[i]==','){
+		i++;
+	}
+	if(line[i]=='-'){
+		flag1=1;
+		i++;
+	}
+	if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+		cout<<"Invalid Instruction Format"<<endl;
+		return "error";
+	}
 	temp=0;
 	while(line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
 		temp = temp*10 + (int)(line[i++]-'0');
+	if(flag1==1){
+		temp=-1*temp;
+	}
+	if(temp>2047||temp<-2048){
+		cout<<"Invalid Immediate"<<endl;
+		return "error";
+	}	
 	immediate = dec2Binary(temp,12);
-	i+=2;
+	while(line[i]==' '){
+		i++;
+	}
+	if(line[i]!='('){
+		cout<<"Invalid Instruction Format"<<endl;
+		return "error";
+	}
+	i++;
+	while(line[i]==' '){
+		i++;
+	}
+	if(line[i]!='x'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	i++;
+	if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
 	temp=0;
 	while(line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
 		temp = temp*10 + (int)(line[i++]-'0');
+	if(temp>31){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
 	rs1 = dec2Binary(temp,5);
+	return "valid";
 }
 //End of otherDataFieldStype
 
 //Function to extract values of SB type
-void otherDataFieldSBtype(string &line, string &immediate, string &rs1, string &rs2, lli i, lli currentLineNumber, vector<labelData> &labelArray){
+string otherDataFieldSBtype(string &line, string &immediate, string &rs1, string &rs2, lli i, lli currentLineNumber, vector<labelData> &labelArray){
 	int temp=0, flag=0;//To check whether such label exist or not
+	int flag1=0;
 	lli labelOffset;
 	string label="";
-	while(line[i]!='x')
-			i++;
-	i++;
-	while(line[i]!=',')
-		temp=temp*10+(int)(line[i++]-'0');
-	rs1=dec2Binary(temp, 5);
-
-	temp=0;
-	while(line[i]!='x')
-		i++;
-	i++;
-	while(line[i]!=',')
-		temp=temp*10+(int)(line[i++]-'0');
-	rs2=dec2Binary(temp, 5);
-
-	temp=0;
-	i++;
 	while(line[i]==' ')
+			i++;
+	if(line[i]!='x'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	i++;
+	if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	while(line[i]=='0'||line[i]=='1'||line[i]=='2'||line[i]=='3'||line[i]=='4'||line[i]=='5'||line[i]=='6'||line[i]=='7'||line[i]=='8'||line[i]=='9')
+		temp=temp*10+(int)(line[i++]-'0');
+	if(temp>31){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	rs1=dec2Binary(temp, 5);
+	while(line[i]==' '||line[i]==',')
+		i++;
+	if(line[i]!='x'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	i++;
+	temp=0;
+	if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	while(line[i]=='0'||line[i]=='1'||line[i]=='2'||line[i]=='3'||line[i]=='4'||line[i]=='5'||line[i]=='6'||line[i]=='7'||line[i]=='8'||line[i]=='9')
+		temp=temp*10+(int)(line[i++]-'0');
+	if(temp>31){
+		cout<<"invalid register"<<endl;
+		return "error";
+	}
+	rs2=dec2Binary(temp, 5);
+	temp=0;
+	i++;
+	while(line[i]==' '||line[i]==',')
 		i++;
 	while(i<line.length()){
 		if(line[i]==' ') 
@@ -249,32 +475,48 @@ void otherDataFieldSBtype(string &line, string &immediate, string &rs1, string &
 	for(i=0;i<labelArray.size();i++)
 		if(labelArray[i].label==label){
 			labelOffset=(labelArray[i].lineNumber-currentLineNumber)*4;
+			if(labelOffset<-1024||labelOffset>2048){
+				cout<<"out of range offset"<<endl;
+				return "error";
+			}
 			immediate=dec2Binary(labelOffset, 12);
 			flag=1;
 		}
 
-	if(flag==0)
+	if(flag==0){
 		cout<<"ERROR: Incorrect label"<<endl;
+		return "error";
+	}
+	return "valid";
 }
 //End of otherDataFieldSBtype
 
-void otherDataFieldUJtype(string &line, string &immediate, string &rd, lli i, lli currentLineNumber, vector<labelData> &labelArray){
+string otherDataFieldUJtype(string &line, string &immediate, string &rd, lli i, lli currentLineNumber, vector<labelData> &labelArray){
 	int temp=0;
 	int flag=0;//To check whether such label exist or not
 	lli labelOffset;
 	string label="";
-	while(line[i]!='x')
-		i++;
-	i++;
-	while(line[i]!=',')
-		temp=temp*10+(int)(line[i++]-'0');
-	rd=dec2Binary(temp, 5);
-
-	while(line[i]!=',')
-		i++;	
-	i++;
 	while(line[i]==' ')
 		i++;
+	if(line[i]!='x'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	i++;
+	if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	while(line[i]=='0'||line[i]=='1'||line[i]=='2'||line[i]=='3'||line[i]=='4'||line[i]=='5'||line[i]=='6'||line[i]=='7'||line[i]=='8'||line[i]=='9')
+		temp=temp*10+(int)(line[i++]-'0');
+	if(temp>31){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	rd=dec2Binary(temp, 5);
+	while(line[i]==' '||line[i]==',')
+		i++;
+
 	while(i<line.length()){
 		if(line[i]==' ') 
 			break;
@@ -284,30 +526,56 @@ void otherDataFieldUJtype(string &line, string &immediate, string &rd, lli i, ll
 	for(i=0;i<labelArray.size();i++)
 		if(labelArray[i].label==label){
 			labelOffset=(labelArray[i].lineNumber-currentLineNumber)*4;
+			if(labelOffset<-262144||labelOffset>262143){
+				cout<<"out of range label"<<endl;
+				return "error";
+			}
 			immediate=dec2Binary(labelOffset, 20);
 			flag=1;
 		}
-	if(flag==0)
+	if(flag==0){
 		cout<<"ERROR: Incorrect label"<<endl;
+		return "error";
+	}
+	return "valid";
 }
 
-void otherDataFieldUtype(string &line,string &immediate,string &rd,lli i){
+string otherDataFieldUtype(string &line,string &immediate,string &rd,lli i){
 	int temp=0;
-	while(line[i]!='x')
-		i++;
-	i++;
-	while(line[i]!=',')
-		temp=temp*10+(int)(line[i++]-'0');
-	rd=dec2Binary(temp, 5);
-	i++;
 	while(line[i]==' ')
 		i++;
+	if(line[i]!='x'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	i++;
+	if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	while(line[i]=='0'||line[i]=='1'||line[i]=='2'||line[i]=='3'||line[i]=='4'||line[i]=='5'||line[i]=='6'||line[i]=='7'||line[i]=='8'||line[i]=='9')
+		temp=temp*10+(int)(line[i++]-'0');
+	if(temp>31){
+		cout<<"Invalid Register"<<endl;
+		return "error";
+	}
+	rd=dec2Binary(temp, 5);
+	while(line[i]==' '||line[i]==',')
+		i++;
+	if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
+		cout<<"Invalid Immediate"<<endl;
+		return "error";
+	}
 	temp=0;
 	while(line[i]=='0'|| line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
 		temp = temp * 10 + (int)(line[i++] - '0');
+	if(temp<-524288||temp>524287){
+		cout<<"Invalid Immediate"<<endl;
+		return "error";
+	}
 	immediate=dec2Binary(temp,20);
+	return "valid";
 }
-
 
 /*Assembly to Machine Code
 Input: each line of assembly code, line number, label array
@@ -323,9 +591,9 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 	int ISubType = 0;//subtypes for I-type instructions 0 for addi etc, 1 for instruction with offset, 2 for shift instructions
 
 	int i=0;
-	while(line[i]!=' ')
+	while(i<line.size()&&line[i]!=' ')
 		instruction+=line[i++];
-
+	
 	if(instruction=="add")
 		opcode="0110011", funct3="000", funct7="0000000", type="R";
 
@@ -493,26 +761,32 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 	
 	else if(instruction=="jal")
 		opcode="1101111",type="UJ";
-
+	
 	else if(instruction=="auipc")
 		opcode="0010111",type="U";
 
 	else if(instruction=="lui")
 		opcode="0110111", type="U";
-	
-	else
+
+	else if(instruction[instruction.size()-1]==':')
 		type="LABEL";
+
+	else{
+		cout<<"Unsupported Instruction"<<endl;
+	}
 
 	//To extract other data field according to instruction type
 	if(type=="R"){
-		otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
-		machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
+		string s = otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
+		if(s!="error")
+			machineCodeInstructionBinary=funct7+rs2+rs1+funct3+rd+opcode;
 	}
 	
 	else if(type == "I"){
-		otherDataFieldItype(line, rs1, immediate, rd, i, ISubType);
-
-		if(ISubType == 0 || ISubType == 1){
+		string s = otherDataFieldItype(line, rs1, immediate, rd, i, ISubType);
+		if(s=="error")
+			machineCodeInstructionBinary="";
+		else if(ISubType == 0 || ISubType == 1){
 			machineCodeInstructionBinary = immediate + rs1 + funct3 + rd + opcode;
 		}
 		else if(ISubType == 2){
@@ -521,31 +795,36 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 	}
 	
 	else if(type=="S"){
-		otherDataFieldStype(line,rs2,immediate,rs1,i);
+		string s = otherDataFieldStype(line,rs2,immediate,rs1,i);
+		//cout<<"s = "<<s<<endl;
 		string imm_4_0 = immediate.substr(7,5);
 		string imm_11_5 = immediate.substr(0,7);
-		machineCodeInstructionBinary = imm_11_5+rs2+rs1+funct3+imm_4_0+opcode;
+		if(s!="error")
+			machineCodeInstructionBinary = imm_11_5+rs2+rs1+funct3+imm_4_0+opcode;
 	}
 	
 	else if(type=="SB"){
-		otherDataFieldSBtype(line, immediate, rs1, rs2, i, currentLineNumber, labelArray);
-		machineCodeInstructionBinary=immediate[0]+immediate.substr(1,6)+rs2+rs1+funct3+immediate.substr(7,4)+immediate[0]+opcode;
+		string s = otherDataFieldSBtype(line, immediate, rs1, rs2, i, currentLineNumber, labelArray);
+		if(s!="error")
+			machineCodeInstructionBinary=immediate[0]+immediate.substr(1,6)+rs2+rs1+funct3+immediate.substr(7,4)+immediate[0]+opcode;
 	}
-
 	else if(type=="UJ"){
-		otherDataFieldUJtype(line,immediate,rd,i,currentLineNumber,labelArray);
-		machineCodeInstructionBinary = immediate[0]+immediate.substr(9,10)+immediate[8]+immediate.substr(0,8)+rd+opcode;
+		string s = otherDataFieldUJtype(line,immediate,rd,i,currentLineNumber,labelArray);
+		if(s!="error")
+			machineCodeInstructionBinary = immediate[0]+immediate.substr(9,10)+immediate[8]+immediate.substr(0,8)+rd+opcode;
 	}
-
 	else if(type=="U"){
-		otherDataFieldUtype(line,immediate,rd,i);
-		machineCodeInstructionBinary = immediate+rd+opcode;
+		string s = otherDataFieldUtype(line,immediate,rd,i);
+		if(s!="error")
+			machineCodeInstructionBinary = immediate+rd+opcode;
 	}
 	
 	else if(type=="LABEL")
 		return "labelDetected";
-
-	machineCodeInstructionHex="0x"+bin2Hex(machineCodeInstructionBinary);
+	if(machineCodeInstructionBinary!="")
+		machineCodeInstructionHex="0x"+bin2Hex(machineCodeInstructionBinary);
+	else
+		machineCodeInstructionHex="";
 	return machineCodeInstructionHex;
 }
 //End of function asm2mc
@@ -576,7 +855,6 @@ void assignLineNumberToLabel(vector<labelData> &labelArray){
 			tempLabel.label=label;
 			tempLabel.lineNumber=lineNumber;
 			labelArray.push_back(tempLabel);
-			lineNumber--;
 		}
 		lineNumber++;
 	}
@@ -602,14 +880,18 @@ int main(){
 
 	//To read input from Assembly Code File 
 	while(getline(fileReading, assemblyLine)){
+		//cout<<"assemblyLine = "<<assemblyLine<<endl;
 		machineLine=asm2mc(assemblyLine, currentLineNumber, labelArray);
+		//cout<<"machineLine = "<<machineLine<<endl;
 		if(machineLine!="labelDetected"){
+			if(machineLine!=""){
 			binaryInstructionAddress=dec2Binary(instructionAddress, 32);
 			instructionAddress+=4;
 			hexInstructionAddress="0x"+bin2Hex(binaryInstructionAddress);
 			machineLine=hexInstructionAddress+" "+machineLine;
 			fileWriting<<machineLine<<endl;
 			currentLineNumber++;
+		}
 		}
 	}
 	fileWriting.close();
