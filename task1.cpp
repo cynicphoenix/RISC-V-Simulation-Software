@@ -593,187 +593,197 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 	int i=0;
 	while(i<line.size()&&line[i]!=' ')
 		instruction+=line[i++];
+	if(instruction[instruction.size()-1]==':'){
+		type="LABEL";
+		if(line[i]==' '){
+			i++;
+			instruction="";
+			while(line[i]!=' '){
+				instruction += line[i];
+				i++;
+			}
+			type="LABELI";
+		}
+	}
 	
 	if(instruction=="add")
 		opcode="0110011", funct3="000", funct7="0000000", type="R";
 
-	else if(instruction=="and")
+	if(instruction=="and")
 		opcode="0110011", funct3="111", funct7="0000000", type="R";
 		
-	else if(instruction=="or")
+	if(instruction=="or")
 		opcode="0110011", funct3="110", funct7="0000000", type ="R";
 
-	else if(instruction=="sll")
+	if(instruction=="sll")
 		opcode="0110011", funct3="001", funct7="0000000", type ="R";
 		
-	else if(instruction=="slt")
+	if(instruction=="slt")
 		opcode="0110011", funct3="010", funct7="0000000", type ="R";
 
-	else if(instruction=="sltu")
+	if(instruction=="sltu")
 		opcode="0110011", funct3="011", funct7="0000000", type ="R";
 
-	else if(instruction=="sra")
+	if(instruction=="sra")
 		opcode="0110011", funct3="101", funct7="0100000", type ="R";
 	
-	else if(instruction=="srl")
+	if(instruction=="srl")
 		opcode="0110011", funct3="101", funct7="0000000", type ="R";
 	
-	else if(instruction=="sub")
+	if(instruction=="sub")
 		opcode="0110011", funct3="000", funct7="0100000", type ="R";
 	
-	else if(instruction=="xor")
+	if(instruction=="xor")
 		opcode="0110011", funct3="100", funct7="0000000", type ="R";
 	
-	else if(instruction=="mul")
+	if(instruction=="mul")
 		opcode="0110011", funct3="000", funct7="0000001", type ="R";
 		
-	else if(instruction=="mulh")
+	if(instruction=="mulh")
 		opcode="0110011", funct3="001", funct7="0000001", type ="R";
 		
-	else if(instruction=="mulhsu")
+	if(instruction=="mulhsu")
 		opcode="0110011", funct3="010", funct7="0000001", type ="R";
 		
-	else if(instruction=="mulhu")
+	if(instruction=="mulhu")
 		opcode="0110011", funct3="011", funct7="0000001", type ="R";
 	
-	else if(instruction=="div")
+	if(instruction=="div")
 		opcode="0110011", funct3="100", funct7="0000001", type ="R";
 		
-	else if(instruction=="divu")
+	if(instruction=="divu")
 		opcode="0110011", funct3="101", funct7="0000001", type ="R";
 		
-	else if(instruction=="rem")
+	if(instruction=="rem")
 		opcode="0110011", funct3="110", funct7="0000001", type ="R";
 		
-	else if(instruction=="remu")
+	if(instruction=="remu")
 		opcode="0110011", funct3="111", funct7="0000001", type ="R";
 		
-	else if(instruction=="addw")
+	if(instruction=="addw")
 		opcode="0111011", funct3="000", funct7="0000000", type  ="R";
 		
-	else if(instruction=="subw")
+	if(instruction=="subw")
 		opcode="0111011", funct3="000", funct7="0100000", type ="R";
 		
-	else if(instruction=="sllw")
+	if(instruction=="sllw")
 		opcode="0111011", funct3="001", funct7="0000000", type ="R";
 		
-	else if(instruction=="srlw")
+	if(instruction=="srlw")
 		opcode="0111011", funct3="101", funct7="0000000", type ="R";
 		
-	else if(instruction=="sraw")
+	if(instruction=="sraw")
 		opcode="0111011", funct3="101", funct7="0100000", type ="R";
 	
-	else if(instruction == "lb")
+	if(instruction == "lb")
 		opcode = "0000011", funct3 = "000", type = "I", ISubType = 1;
 
-	else if (instruction == "lh")
+	if(instruction == "lh")
 		opcode = "0000011", funct3 = "001", type = "I", ISubType = 1;
 
-	else if (instruction == "lw")
+	if(instruction == "lw")
 		opcode = "0000011", funct3 = "010", type = "I", ISubType = 1;
 	
-	else if (instruction == "ld")
+	if(instruction == "ld")
 		opcode = "0000011", funct3 = "011", type = "I", ISubType = 1;
 
-	else if (instruction == "lbu")
+	if(instruction == "lbu")
 		opcode = "0000011", funct3 = "100", type = "I", ISubType = 1;
 
-	else if (instruction == "lhu")
+	if(instruction == "lhu")
 		opcode = "0000011", funct3 = "101", type = "I", ISubType = 1;
 
-	else if (instruction == "lwu")
+	if(instruction == "lwu")
 		opcode = "0000011", funct3 = "110", type = "I", ISubType = 1;
 
-	else if (instruction == "addi")
+	if(instruction == "addi")
 		opcode = "0010011", funct3 = "000", type = "I";
 	
-	else if (instruction == "slli")
+	if(instruction == "slli")
 		opcode = "0010011", funct3 = "001",funct7 = "0000000", type = "I", ISubType = 2;
 
-	else if (instruction == "srli")
+	if(instruction == "srli")
 		opcode = "0010011", funct3 = "101", funct7 = "0000000", type = "I", ISubType = 2;
 
-	else if (instruction == "srai")
+	if(instruction == "srai")
 		opcode = "0010011", funct3 = "001", funct7 = "0100000", type = "I", ISubType = 2;
 
-	else if (instruction == "slliw")
+	if(instruction == "slliw")
 		opcode = "0011011", funct3 = "001", funct7 = "0000000", type = "I", ISubType = 2;
 
-	else if (instruction == "srliw")
+	if(instruction == "srliw")
 		opcode = "0011011", funct3 = "101", funct7 = "0000000", type = "I", ISubType = 2;
 
-	else if (instruction == "sraiw")
+	if(instruction == "sraiw")
 		opcode = "0011011", funct3 = "101", funct7 = "0100000", type = "I", ISubType = 2;
 
-	else if (instruction == "slti")
+	if(instruction == "slti")
 		opcode = "0010011", funct3 = "001", type = "I";
 
-	else if (instruction == "sltiu")
+	if(instruction == "sltiu")
 		opcode = "0010011", funct3 = "011", type = "I";
 
-	else if (instruction == "xori")
+	if(instruction == "xori")
 		opcode = "0010011", funct3 = "100", type = "I";
 
-	else if (instruction == "slti")
+	if(instruction == "slti")
 		opcode = "0010011", funct3 = "001", type = "I";
 
-	else if (instruction == "ori")
+	if(instruction == "ori")
 		opcode = "0010011", funct3 = "110", type = "I";
 	
-	else if (instruction == "andi")
+	if (instruction == "andi")
 		opcode = "0010011", funct3 = "111", type = "I";
 
-	else if (instruction == "addiw")
+	if (instruction == "addiw")
 		opcode = "0010011", funct3 = "000", type = "I";
 
-	else if (instruction == "sd")
+	if (instruction == "sd")
 		opcode = "0010011", funct3 = "011", type = "I";
 
-	else if (instruction == "jalr")
+	if (instruction == "jalr")
 		opcode = "1100111", funct3 = "000", type = "I", ISubType = 1;
 	
-	else if(instruction == "sw")
+	if(instruction == "sw")
 		opcode = "0100011", funct3 = "010", type = "S";
 
-	else if(instruction == "sh")
+	if(instruction == "sh")
 		opcode = "0100011", funct3 = "001", type = "S";
 
-	else if(instruction == "sb")
+	if(instruction == "sb")
 		opcode = "0100011", funct3 = "000", type = "S";
 
-	else if(instruction=="beq")
+	if(instruction=="beq")
 		opcode="1100011",funct3="000",type="SB";
 
-	else if(instruction=="bne")
+	if(instruction=="bne")
 		opcode="1100011",funct3="001",type="SB";
 
-	else if(instruction=="blt")
+	if(instruction=="blt")
 		opcode="1100011",funct3="100",type="SB";
 
-	else if(instruction=="bge")
+	if(instruction=="bge")
 		opcode="1100011",funct3="101",type="SB";
 
-	else if(instruction=="bltu")
+	if(instruction=="bltu")
 		opcode="1100011",funct3="110",type="SB";
 
-	else if(instruction=="bgeu")
+	if(instruction=="bgeu")
 		opcode="1100011",funct3="111",type="SB";
 	
-	else if(instruction=="jal")
+	if(instruction=="jal")
 		opcode="1101111",type="UJ";
 	
-	else if(instruction=="auipc")
+	if(instruction=="auipc")
 		opcode="0010111",type="U";
 
-	else if(instruction=="lui")
+	if(instruction=="lui")
 		opcode="0110111", type="U";
 
-	else if(instruction[instruction.size()-1]==':')
-		type="LABEL";
 
-	else{
-		cout<<"Unsupported Instruction"<<endl;
-	}
+	// if(type!="R" && type!="I" && type!="S" && type!="SB" && type!="U" && type!="UJ" && type!="LABEL" && type!="LABELI"){
+	// 	cout<<"Unsupported Instruction"<<endl;
+	// }
 
 	//To extract other data field according to instruction type
 	if(type=="R"){
@@ -818,9 +828,11 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 		if(s!="error")
 			machineCodeInstructionBinary = immediate+rd+opcode;
 	}
-	
 	else if(type=="LABEL")
 		return "labelDetected";
+	else{
+		cout<<"Unsupported Instruction"<<endl;
+	}
 	if(machineCodeInstructionBinary!="")
 		machineCodeInstructionHex="0x"+bin2Hex(machineCodeInstructionBinary);
 	else
