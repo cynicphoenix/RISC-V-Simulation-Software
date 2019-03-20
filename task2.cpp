@@ -43,6 +43,7 @@ lli returnAddress;//Return Address in case of jal/jalr
 int ALU_OP, B_SELECT;
 int MEM_READ;	
 int MEM_WRITE;
+lli RF_WRITE;
 
 
 //Call in decode stage & Writeback Stage
@@ -104,6 +105,7 @@ void decode()
 	funct3 >>= 29;
 	int funct7 = IR >> 25;
 	if(opcode == OPCODE_I1){
+		RF_WRITE = 1;
 		int imm = IR >> 20;
 		int rs1 = IR << 12;
 		rs1 >>= 27;
@@ -116,7 +118,7 @@ void decode()
 		addressC = rd;
 		MEM_READ = 1;
 		MEM_WRITE = 0;
-		if(funct3 == 0){
+		if(funct3 == 0){ 
 
 		}
 
@@ -146,14 +148,105 @@ void decode()
 	}
 
 	else if(opcode == OPCODE_I2){
+		RF_WRITE = 1;
+		int imm = IR >> 20;
+		int rs1 = IR << 12;
+		rs1 >>= 27;
+		int rd = IR << 20;
+		rd >>= 27;
+		
+		B_SELECT = 1;
+		addressA = rs1;
+		immediate = imm;
+		addressC = rd;
+		MEM_READ = 0;
+		MEM_WRITE = 0;
 
+		if (funct3 == 0){
+			ALU_OP = 0;
+		}
+
+		else if (funct3 == 1){
+			int shamt = IR << 7;
+			shamt >>= 27;
+			immediate = shamt;
+			ALU_OP = 7;
+		}
+
+		else if (funct3 == 2){
+			ALU_OP = 7;
+		}
+
+		else if (funct3 == 3){
+			ALU_OP = 7;
+		}
+
+		else if (funct3 == 4){
+			ALU_OP = 8;
+		}
+
+		else if (funct3 == 5){
+			int shamt = IR << 7;
+			shamt >>= 27;
+			immediate = shamt;
+			ALU_OP = 7;
+			if(funct7 == f7_0){
+
+			}
+
+			else{
+
+			}
+		}	
+
+		else if (funct3 == 6){
+			ALU_OP = 6;
+		}
+		
+		else if(funct3 == 7){
+			ALU_OP = 1;
+		}
 	}
 
 	else if(opcode == OPCODE_I3){
+		RF_WRITE = 1;
+		addressA = IR << 12;
+		addressA >>= 27;
+		addressC = IR << 20;
+		addressC >>= 27;
+		MEM_READ = 0;
+		MEM_WRITE = 0;
+		int shamt = IR << 7;
+		shamt >>= 27;
+
+		B_SELECT = 1;
+
+		if(funct3 == 0){
+			ALU_OP = 0;
+			immediate = IR >> 20;
+		}
+
+		else if(funct3 == 1){
+			ALU_OP = 7;
+			immediate = shamt;
+		}
+
+		else if(funct3 == 5){
+			immediate = shamt;
+			ALU_OP = 7;
+			if (funct7 == f7_0){
+
+			}
+
+			if(funct7 == f7_1){
+
+			}
+		}
 
 	}
 
-	else if(opcode == OPCODE_I4){
+	else if(opcode == OPCODE_I4){	//for jalr
+		RF_WRITE = 1;
 		int imm = IR >> 20;
 		int rs1 = IR << 12;
 		rs1 >>= 27;
