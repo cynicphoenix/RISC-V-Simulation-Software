@@ -7,12 +7,43 @@ Update control Circuitry */
 #define lli long long int
 using namespace std;
 
+#define OPCODE_I1 3 	//for load
+#define OPCODE_I2 19	// for shift, ori, andi
+#define OPCODE_U1 23	// for auipc
+#define OPCODE_I3 27	// for shiftw and addiw
+#define OPCODE_S1 35	//for sd, sw, sl, sh
+#define OPCODE_R1 51 	//for add, sub, and etc
+#define OPCODE_U2 55	// for lui
+#define OPCODE_R2 59	// for addw, subw etc
+#define OPCODE_SB1 99	//for branch jump
+#define OPCODE_UJ  111	//for jal
+#define OPCODE_I4	103 //for jalr
+
+#define f3_0 0
+#define f3_1 1
+#define f3_2 2
+#define f3_3 3
+#define f3_4 4
+#define f3_5 5
+#define f3_6 6
+#define f3_7 7
+
+#define f7_0 0
+#define f7_1 32
+
 lli memory[1 << 22]; //Processor Memory
 lli regArray[32] = {0};
 lli PC=0;//Program Counter
 lli IR;//Instruction Register
 lli RA, RB, RZ, RY, RM;//Interstage Buffers
+lli addressA, addressB;
+lli immediate; // for immediate values
+lli addressC; //destination register
 lli returnAddress;//Return Address in case of jal/jalr
+int ALU_OP, B_SELECT;
+int MEM_READ;	
+int MEM_WRITE;
+
 
 //Call in decode stage & Writeback Stage
 void readWriteRegFile(int RF_WRITE, int addressA, int addressB, int addressC)
@@ -65,10 +96,81 @@ void fetch(){
 Stage 2: Decode Stage
 RA & RB will be updated after this stage 
 */
-void decode(){
+void decode()
+{
+	int opcode = IR << 25;
+	opcode >>= 25;
+	int funct3 = IR << 17;
+	funct3 >>= 29;
+	int funct7 = IR >> 25;
+	if(opcode == OPCODE_I1){
+		int imm = IR >> 20;
+		int rs1 = IR << 12;
+		rs1 >>= 27;
+		int rd = IR << 20;
+		rd >>= 27;
+		B_SELECT = 1;
+		ALU_OP = 0;
+		addressA = rs1;
+		immediate = imm;
+		addressC = rd;
+		MEM_READ = 1;
+		MEM_WRITE = 0;
+		if(funct3 == 0){
 
+		}
+
+		else if (funct3 == 1){
+		
+		}
+
+		else if (funct3 == 2){
+		
+		}
+
+		else if (funct3 == 3){
+
+		}
+
+		else if (funct3 == 4){
+
+		}
+
+		else if (funct3 == 5){
+
+		}
+
+		else if (funct3 == 6){
+
+		}
+	}
+
+	else if(opcode == OPCODE_I2){
+
+	}
+
+	else if(opcode == OPCODE_I3){
+
+	}
+
+	else if(opcode == OPCODE_I4){
+		int imm = IR >> 20;
+		int rs1 = IR << 12;
+		rs1 >>= 27;
+		int rd = IR << 20;
+		rd >>= 27;
+
+		B_SELECT = 1;
+		ALU_OP = 10;
+		addressA = rs1;
+		immediate = imm;
+		addressC = rd;
+		MEM_READ = 0;
+		MEM_WRITE = 0;
+	}
 
 }
+
 //End of decode
 
 /* Arithmetic Logic Unit(not complete)
@@ -111,13 +213,14 @@ int alu(int ALU_OP, int B_SELECT, lli immediate = 0)
 
 	//incomplete from here:
 	else if (ALU_OP == 7) //slli, sll, sllw, slliw
-		RZ = InA InB;
+		RZ = InA;
 
 	else if (ALU_OP == 7) //sub, subw
 		RZ = InA - InB;
 
 	else if (ALU_OP == 8) //Xor, xori
 		RZ = InA ^ InB;
+	// for jalr ALU_OP = 10
 }
 //end of ALU function
 
