@@ -9,7 +9,11 @@ struct labelData{
 	string label;
 	lli lineNumber;
 };
-
+//to store variables and addresses defined in .data segment
+struct data{
+	string var;
+	string hexaddress;
+};
 //Function to convert integer number to binary string 
 string dec2Binary(lli decimalNum, int length){
 	int i=0,l=length;
@@ -780,11 +784,6 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 	if(instruction=="lui")
 		opcode="0110111", type="U";
 
-
-	// if(type!="R" && type!="I" && type!="S" && type!="SB" && type!="U" && type!="UJ" && type!="LABEL" && type!="LABELI"){
-	// 	cout<<"Unsupported Instruction"<<endl;
-	// }
-
 	//To extract other data field according to instruction type
 	if(type=="R"){
 		string s = otherDataFieldRtype(line, machineCodeInstructionBinary, rs1, rs2, rd, i);
@@ -880,21 +879,70 @@ int main(){
 	string hexInstructionAddress;
 	string binaryInstructionAddress;
 	string assemblyLine;
-	string machineLine;
-	
+	string machineLine="";
+	vector<data> varArray;
 	vector<labelData> labelArray;
 	assignLineNumberToLabel(labelArray);
-
+	int datasegment=0;//to check if .data is there or not
+	int textsegment=0;
+	long int* memory = new long int[1<<22];
+	int memoryused=0;
 	fstream fileReading;
 	fstream fileWriting;
 	fileReading.open("assemblyCode.asm");
 	fileWriting.open("machineCode.mc");
-
+	int datal=1048576;//0x100000
 	//To read input from Assembly Code File 
 	while(getline(fileReading, assemblyLine)){
-		//cout<<"assemblyLine = "<<assemblyLine<<endl;
-		machineLine=asm2mc(assemblyLine, currentLineNumber, labelArray);
-		//cout<<"machineLine = "<<machineLine<<endl;
+		if(assemblyLine==".data")
+			datasegment=1;
+		if(assemblyLine==".text"){
+			datasegment=0;
+			textsegment=1;
+		}
+		int i = 0;
+		string var="";
+		string size="";
+		string value="";
+		string address="";
+		if(datasegment==1 && assemblyLine!=".data"){
+			while(assemblyLine[i]!=':' && i<assemblyLine.size()){
+				var+=assemblyLine[i];
+				i++;
+			}
+			if(assemblyLine[i]!=':'){
+				cout<<"ERROR"<<endl;
+				goto EXIT;
+			}
+			i++;
+			while(assemblyLine[i]==' '){
+				i++;
+			}
+			i++;
+			while(assemblyLine[i]!=' '){
+				size+=assemblyLine[i];
+				i++;
+			}
+			i++;
+			while(i<assemblyLine.size() && assemblyLine[i]=='0'||assemblyLine[i]=='1'||assemblyLine[i]=='2'||assemblyLine[i]=='3'||assemblyLine[i]=='4'||assemblyLine[i]=='5'||assemblyLine[i]=='6'||assemblyLine[i]=='7'||assemblyLine[i]=='8'||assemblyLine[i]=='9'){
+				value+=assemblyLine[i];
+				i++;
+			}
+			address = bitset<24>(datal).to_string();
+			address = bin2Hex(address);
+			machineLine = value+" 0x"+address+" "+size;
+			if(size=="byte")
+				datal++;
+			else if(size=="word")
+				datal+=4;
+			data obj;
+			obj.var=var;
+			obj.hexaddress="0x"+address;
+			varArray.push_back(obj);
+			fileWriting<<machineLine<<endl;
+		}
+		else if(assemblyLine!=".text" && assemblyLine!=".data"){
+			machineLine=asm2mc(assemblyLine, currentLineNumber, labelArray);
 		if(machineLine!="labelDetected"){
 			if(machineLine!=""){
 			binaryInstructionAddress=dec2Binary(instructionAddress, 32);
@@ -906,7 +954,13 @@ int main(){
 		}
 		}
 	}
+}
+	EXIT:
 	fileWriting.close();
 	fileReading.close();
 }
 //End of main
+//instructions to be used for load address
+// auipc rd, symbol[31:12] + 1
+// addi rd, rd, symbol[11:0]
+//https://github.com/riscv/riscv-isa-manual/issues/144
