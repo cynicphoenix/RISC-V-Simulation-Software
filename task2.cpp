@@ -9,15 +9,21 @@ using namespace std;
 
 #define OPCODE_I1 3 	//for load
 #define OPCODE_I2 19	// for shift, ori, andi
-#define OPCODE_U1 23	// for auipc
 #define OPCODE_I3 27	// for shiftw and addiw
-#define OPCODE_S1 35	//for sd, sw, sl, sh
-#define OPCODE_R1 51 	//for add, sub, and etc
+#define OPCODE_I4 103   //for jalr
+
+#define OPCODE_U1 23	// for auipc
 #define OPCODE_U2 55	// for lui
+
+#define OPCODE_S1 35	//for sd, sw, sl, sh
+
+#define OPCODE_R1 51 	//for add, sub, and etc
 #define OPCODE_R2 59	// for addw, subw etc
+
 #define OPCODE_SB1 99	//for branch jump
+
 #define OPCODE_UJ  111	//for jal
-#define OPCODE_I4	103 //for jalr
+
 
 #define f3_0 0
 #define f3_1 1
@@ -43,7 +49,7 @@ lli returnAddress;//Return Address in case of jal/jalr
 int ALU_OP, B_SELECT;
 int MEM_READ;	
 int MEM_WRITE;
-lli RF_WRITE;
+int RF_WRITE;
 
 
 //Call in decode stage & Writeback Stage
@@ -118,33 +124,6 @@ void decode()
 		addressC = rd;
 		MEM_READ = 1;
 		MEM_WRITE = 0;
-		if(funct3 == 0){ 
-
-		}
-
-		else if (funct3 == 1){
-		
-		}
-
-		else if (funct3 == 2){
-		
-		}
-
-		else if (funct3 == 3){
-
-		}
-
-		else if (funct3 == 4){
-
-		}
-
-		else if (funct3 == 5){
-
-		}
-
-		else if (funct3 == 6){
-
-		}
 	}
 
 	else if(opcode == OPCODE_I2){
@@ -190,14 +169,7 @@ void decode()
 			shamt >>= 27;
 			immediate = shamt;
 			ALU_OP = 7;
-			if(funct7 == f7_0){
-
-			}
-
-			else{
-
-			}
-		}	
+		}
 
 		else if (funct3 == 6){
 			ALU_OP = 6;
@@ -234,20 +206,13 @@ void decode()
 		else if(funct3 == 5){
 			immediate = shamt;
 			ALU_OP = 7;
-			if (funct7 == f7_0){
-
-			}
-
-			if(funct7 == f7_1){
-
-			}
 		}
 
 	}
 
 	else if(opcode == OPCODE_I4){	//for jalr
 		RF_WRITE = 1;
-		int imm = IR >> 20;
+		int imm = IR << 20;
 		int rs1 = IR << 12;
 		rs1 >>= 27;
 		int rd = IR << 20;
@@ -260,6 +225,51 @@ void decode()
 		addressC = rd;
 		MEM_READ = 0;
 		MEM_WRITE = 0;
+	}
+
+	else if(opcode == OPCODE_S1){
+		int imm1 = IR << 20;
+		imm1 >>= 27;
+		int imm2 = IR >> 25;
+		immediate = imm1 + (imm2 << 5);
+		
+		addressB = IR << 7;
+		addressB >>= 27;
+		
+		addressA = IR << 12;
+		addressA = IR >> 27;
+
+		MEM_WRITE = 1;
+		MEM_READ = 0;
+		B_SELECT = 1;
+		RF_WRITE = 0;
+		ALU_OP = 11;
+	}
+
+	else if(opcode == OPCODE_U1){
+		immediate = IR >> 11;
+
+		addressC = IR << 20;
+		addressC >>= 27;
+		
+		B_SELECT = 1;
+		MEM_READ = 0;
+		MEM_WRITE =  0;
+		RF_WRITE = 0;
+		ALU_OP = 12;
+	}
+
+	else if(opcode == OPCODE_U2){
+		immediate = IR >> 11;
+		
+		addressC = IR << 20;
+		addressC >>= 27;
+
+		ALU_OP = 13;
+		B_SELECT = 1;
+		MEM_READ = 0;
+		MEM_WRITE = 0;
+		RF_WRITE = 1;
 	}
 
 }
@@ -314,6 +324,9 @@ int alu(int ALU_OP, int B_SELECT, lli immediate = 0)
 	else if (ALU_OP == 8) //Xor, xori
 		RZ = InA ^ InB;
 	// for jalr ALU_OP = 10
+	// for sd, sw, sh, sb ALU_OP = 11
+	// for auipc use ALU_OP = 12
+	// for lui use ALU_op = 13
 }
 //end of ALU function
 
