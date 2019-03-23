@@ -37,7 +37,7 @@ using namespace std;
 #define f7_0 0
 #define f7_1 32
 
-lli memory[1 << 22]; //Processor Memory
+char memory[1 << 22]; //Processor Memory
 lli regArray[32] = {0};
 lli PC=0;//Program Counter
 lli IR;//Instruction Register
@@ -65,12 +65,60 @@ void readWriteRegFile(int RF_WRITE, int addressA, int addressB, int addressC)
 //End of readWriteRegFile
 
 //Processor Memory Interface
-int readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, int data = 0)
+lli readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, int data_w = 0)
 {
-	if (MEM_READ == 1)
-		return memory[address / 4];
-	if (MEM_WRITE == 1)
-		memory[address / 4] = data;
+	if(MEM_READ > 0){
+		if (MEM_READ == 1) //lb
+			return memory[address];
+		else if (MEM_READ == 2){ //lh
+			int data = memory[address];
+			data += (int)memory[address+1] << 8;
+			return data;
+		}
+		else if (MEM_READ == 3){ //lw
+			int data = memory[address];
+			data += (int)memory[address+1] << 8;
+			data += (int)memory[address+2] << 16;
+			data += (int)memory[address+3] << 24;
+			return data;	
+		}
+		else if (MEM_READ == 4){ //ld
+			lli data = memory[address];
+			data += (lli)memory[address+1] << 8;
+			data += (lli)memory[address+2] << 16;
+			data += (lli)memory[address+3] << 24;
+			data += (lli)memory[address+3] << 32;
+			data += (lli)memory[address+3] << 40;
+			data += (lli)memory[address+3] << 48;
+			data += (lli)memory[address+3] << 56;
+			return data;
+		}
+	}
+	if (MEM_READ == 1){ //sb
+		memory[address] = data_w;
+	}
+	else if (MEM_WRITE == 2){ //sh
+		memory[address] = data_w && (1<<8 - 1);
+		memory[address+1] = data_w >> 8;
+	}
+	else if (MEM_WRITE == 3){ //sw
+		int setb8 = 1 << 8 - 1;
+		memory[address] = data_w && setb8;
+		memory[address+1] = (data_w && (setb8 << 8)) >> 8;
+		memory[address+2] = (data_w && (setb8 << 16)) >> 16;
+		memory[address+3] = data_w >> 24;
+	}
+	else if (MEM_WRITE == 4){ //sd
+		int setb8 = 1 << 8 - 1;
+		memory[address] = data_w && setb8;
+		memory[address+1] = (data_w && (setb8 << 8)) >> 8;
+		memory[address+2] = (data_w && (setb8 << 16)) >> 16;
+		memory[address+3] = (data_w && (setb8 << 24)) >> 24;
+		memory[address+4] = (data_w && (setb8 << 32)) >> 32;
+		memory[address+5] = (data_w && (setb8 << 16)) >> 40;
+		memory[address+6] = (data_w && (setb8 << 48)) >> 48;
+		memory[address+7] = data_w >> 56;
+	}
 	return 0;
 }
 //End of readWriteMemory
@@ -255,7 +303,7 @@ void decode()
 		B_SELECT = 1;
 		MEM_READ = 0;
 		MEM_WRITE =  0;
-		RF_WRITE = 0;
+		RF_WRITE = 1;
 		ALU_OP = 12;
 	}
 
@@ -271,6 +319,43 @@ void decode()
 		MEM_WRITE = 0;
 		RF_WRITE = 1;
 	}
+
+	else if(opcode == OPCODE_R1 || opcode == OPCODE_R2){
+		int rs1 = IR << 12;
+		rs1 >>= 27;
+		int rs2 = IR << 7;
+		rs2 <<= 27;
+		int rd = IR << 20;
+		rd >>= 27;
+		RF_WRITE = 1;
+		B_SELECT = 0;
+		ALU_OP = 0;
+		addressA = rs1;
+		addressB = rs2;
+		addressC = rd;
+		MEM_READ = 0;
+		MEM_WRITE = 0;
+	}
+
+	else if(opcode == OPCODE_UJ){
+		int rd = IR << 20;
+		rd >>= 27;
+		addressC = rd;
+		int tmp1 = IR >> 12;
+		int bit_20 = tmp1 && (1 << 19);
+		int bit_1_10 = (tmp1 >> 9) && (1 << 11 - 1);
+		int bit_11 = (tmp1 && (1 << 8)) << 2;
+		int bit_19_12 = (tmp1 << 12) >> 1;
+		immediate = bit_1_10 | bit_11 | bit_19_12 | bit_20;
+		RF_WRITE = 1;
+		B_SELECT = 1;
+		ALU_OP = -1;
+		addressA = 0;
+		addressB = 0;
+		MEM_READ = 0;
+		MEM_WRITE = 0;
+	}
+
 
 }
 
