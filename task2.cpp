@@ -46,7 +46,7 @@ lli addressA, addressB;
 lli immediate; // for immediate values
 lli addressC; //destination register
 lli returnAddress;//Return Address in case of jal/jalr
-int ALU_OP, B_SELECT;
+int ALU_OP, B_SELECT, PC_SELECT;
 int MEM_READ;	
 int MEM_WRITE;
 int RF_WRITE;
@@ -170,7 +170,7 @@ void decode()
 		addressA = rs1;
 		immediate = imm;
 		addressC = rd;
-		MEM_READ = 1;
+		MEM_READ = 3;
 		MEM_WRITE = 0;
 	}
 
@@ -186,7 +186,7 @@ void decode()
 		addressA = rs1;
 		immediate = imm;
 		addressC = rd;
-		MEM_READ = 0;
+		MEM_READ = 3;
 		MEM_WRITE = 0;
 
 		if (funct3 == 0){
@@ -287,7 +287,10 @@ void decode()
 		addressA = IR << 12;
 		addressA = IR >> 27;
 
-		MEM_WRITE = 1;
+		if(funct3 == 0) MEM_WRITE = 1;
+		else if(funct3 == 1) MEM_WRITE = 2;
+		else if(funct3 == 2) MEM_WRITE = 3;
+		else if(funct3 == 3) MEM_WRITE = 4;
 		MEM_READ = 0;
 		B_SELECT = 1;
 		RF_WRITE = 0;
@@ -356,7 +359,30 @@ void decode()
 		MEM_WRITE = 0;
 	}
 
-
+	else if(opcode == OPCODE_SB){
+		int rs1 = IR << 12;
+		rs1 >>= 27;
+		int rs2 = IR << 7;
+		rs2 <<= 27;
+		int rd = IR << 20;
+		rd >>= 27;
+		int bit_11 = (rd & 1) << 10;
+		int bit_1_4 = rd >> 1;
+		int bit_12 = (funct7 >> 6) << 11;
+		int bit_5_10 = (funct7 - bit_12 << 6) << 4;
+		int immediate = bit_1_4 | bit_5_10 | bit_11 | bit_12;
+		RF_WRITE = 0;
+		B_SELECT = 1;
+		if(funct3 == 5 || funct3 == 7) ALU_OP = 3;
+		else if(funct3 == 4 || funct3 == 6) ALU_OP = 4;
+		else if(funct3 == 0) ALU_OP = 2;
+		else if(funct3 == 1) ALU_OP = 5;
+		addressA = rs1;
+		addressB = rs2;
+		addressC = 0;
+		MEM_READ = 0;
+		MEM_WRITE = 0;
+	}
 }
 
 //End of decode
