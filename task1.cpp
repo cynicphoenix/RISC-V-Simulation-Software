@@ -181,13 +181,9 @@ string otherDataFieldRtype(string &line, string &machineCodeInstructionBinary, s
 		return "error";
 	}
 
-	while(i<=line.size()-1){
-		if(line[i]!='0' && line[i]!='1' && line[i]!='2' && line[i]!='3' && line[i]!='4' && line[i]!='5' && line[i]!='6' && line[i]!='7' && line[i]!='8' && line[i]!='9'){
-			cout<<"Invalid Register"<<endl;
-			return "error";
-		}
-		temp=temp*10+(int)(line[i++]-'0');
-	}
+	while (line[i] == '0' || line[i] == '1' || line[i] == '2' || line[i] == '3' || line[i] == '4' || line[i] == '5' || line[i] == '6' || line[i] == '7' || line[i] == '8' || line[i] == '9')
+			temp = temp * 10 + (int)(line[i++] - '0');
+		
 	if(temp>31){
 		cout<<"Invalid Register"<<endl;
 		return "error";
@@ -909,6 +905,12 @@ int main(){
 			textsegment=1;
 		}
 		int i = 0;
+		if(assemblyLine[0]==' '){
+			while(assemblyLine[i]==' ')
+				i++;
+			assemblyLine = assemblyLine.substr(i,assemblyLine.size()-i);
+		}
+		i=0;
 		string var="";
 		string size="";
 		string value="";
