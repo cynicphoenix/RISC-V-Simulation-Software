@@ -3,3 +3,4 @@ addi x4, x0, 4
 add x5, x4, x3
 sw x5, 0(x5) 
 lw x6, 0(x5)
+auipc x2,1

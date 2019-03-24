@@ -519,7 +519,7 @@ int alu(int ALU_OP, int B_SELECT, int immediate = 0)
 		RZ = InA ^ InB;
 
 	else if (ALU_OP == 12) //auipc
-		RZ = PC + (InB << 12);
+		RZ = PC - 4 + (InB << 12);
 
 	else if (ALU_OP == 13)
 		RZ = InB << 12;
