@@ -183,7 +183,14 @@ void decode()
 		immediate = imm;
 		addressC = rd;
 		Y_SELECT = 1;
-		MEM_READ = 3; //Changes to accomodate load and store words and so on.
+		if (funct3 == 0) //Changes to accomodate load and store words and so on.
+			MEM_READ = 1;
+		else if (funct3 == 1)
+			MEM_READ = 2;
+		else if (funct3 == 2)
+			MEM_READ = 3;
+		else if (funct3 == 3)
+			MEM_READ = 4; 
 		MEM_WRITE = 0;
 	}
 
