@@ -42,7 +42,7 @@ lli addressA, addressB;
 lli immediate;	 // for immediate values
 lli addressC;	  //destination register
 lli returnAddress; //Return Address in case of jal/jalr
-int ALU_OP, B_SELECT, PC_SELECT, INC_SELECT;
+int ALU_OP, B_SELECT, PC_SELECT, INC_SELECT, Y_SELECT;
 int MEM_READ;
 int MEM_WRITE;
 int RF_WRITE;
@@ -167,6 +167,7 @@ void decode()
 	int funct7 = IR >> 25;
 	PC_SELECT = 1;
 	INC_SELECT = 0;
+	Y_SELECT = 0;
 	if (opcode == OPCODE_I1)
 	{
 		RF_WRITE = 1;
@@ -180,6 +181,7 @@ void decode()
 		addressA = rs1;
 		immediate = imm;
 		addressC = rd;
+		Y_SELECT = 1;
 		MEM_READ = 3;
 		MEM_WRITE = 0;
 	}
@@ -289,7 +291,8 @@ void decode()
 		int rd = IR << 20;
 		rd >>= 27;
 		PC_SELECT = 0;
-		B_SELECT = 1;
+		B_SELECT = 0;
+		Y_SELECT = 2;
 		ALU_OP = 10;
 		addressA = rs1;
 		immediate = imm;
@@ -390,6 +393,7 @@ void decode()
 		addressB = 0;
 		MEM_READ = 0;
 		MEM_WRITE = 0;
+		Y_SELECT = 2;
 	}
 
 	else if (opcode == OPCODE_SB1)
@@ -407,7 +411,6 @@ void decode()
 		int immediate = bit_1_4 | bit_5_10 | bit_11 | bit_12;
 		RF_WRITE = 0;
 		B_SELECT = 0;
-		INC_SELECT = 1;
 		if (funct3 == 5 || funct3 == 7)
 			ALU_OP = 3;
 		else if (funct3 == 4 || funct3 == 6)
