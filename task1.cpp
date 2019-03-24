@@ -9,11 +9,13 @@ struct labelData{
 	string label;
 	lli lineNumber;
 };
+
 //to store variables and addresses defined in .data segment
 struct data{
 	string var;
 	string hexaddress;
 };
+
 //Function to convert integer number to binary string 
 string dec2Binary(lli decimalNum, int length){
 	int i=0,l=length;
@@ -46,7 +48,6 @@ string dec2Binary(lli decimalNum, int length){
 }
 //End of function dec2Binary
 
-//Verified: createMap working correctly
 //Function to create map between binary number and its equivalent hexadecimal 
 void createMap(unordered_map<string, char> *um){ 
     (*um)["0000"] = '0'; 
@@ -68,7 +69,6 @@ void createMap(unordered_map<string, char> *um){
 }
 //End of function createMap
  
-//Verified: bin2Hex working correctly
 //Functiom to convert binary string to hexadecimal string 
 string bin2Hex(string bin){ 
     int l=bin.size(); 
@@ -876,22 +876,30 @@ void assignLineNumberToLabel(vector<labelData> &labelArray){
 //Main File : File Read & Write
 int main(){
 	lli instructionAddress=0, currentLineNumber=0;
+	
 	string hexInstructionAddress;
 	string binaryInstructionAddress;
 	string assemblyLine;
 	string machineLine="";
+	
 	vector<data> varArray;
 	vector<labelData> labelArray;
+	
 	assignLineNumberToLabel(labelArray);
+	
 	int datasegment=0;//to check if .data is there or not
 	int textsegment=0;
 	long int* memory = new long int[1<<22];
 	int memoryused=0;
+	
 	fstream fileReading;
 	fstream fileWriting;
+	fstream fileWriting2;
 	fileReading.open("assemblyCode.asm");
 	fileWriting.open("machineCode.mc");
+	fileWriting2.open("machineData.txt");
 	int datal=1048576;//0x100000
+	
 	//To read input from Assembly Code File 
 	while(getline(fileReading, assemblyLine)){
 		if(assemblyLine==".data")
@@ -915,9 +923,8 @@ int main(){
 				goto EXIT;
 			}
 			i++;
-			while(assemblyLine[i]==' '){
+			while(assemblyLine[i]==' ')
 				i++;
-			}
 			i++;
 			while(assemblyLine[i]!=' '){
 				size+=assemblyLine[i];
@@ -939,24 +946,25 @@ int main(){
 			obj.var=var;
 			obj.hexaddress="0x"+address;
 			varArray.push_back(obj);
-			fileWriting<<machineLine<<endl;
+			fileWriting2<<machineLine<<endl;
 		}
 		else if(assemblyLine!=".text" && assemblyLine!=".data"){
 			machineLine=asm2mc(assemblyLine, currentLineNumber, labelArray);
 		if(machineLine!="labelDetected"){
 			if(machineLine!=""){
-			binaryInstructionAddress=dec2Binary(instructionAddress, 32);
-			instructionAddress+=4;
-			hexInstructionAddress="0x"+bin2Hex(binaryInstructionAddress);
-			machineLine=hexInstructionAddress+" "+machineLine;
-			fileWriting<<machineLine<<endl;
-			currentLineNumber++;
-		}
+				binaryInstructionAddress=dec2Binary(instructionAddress, 32);
+				instructionAddress+=4;
+				hexInstructionAddress="0x"+bin2Hex(binaryInstructionAddress);
+				machineLine=hexInstructionAddress+" "+machineLine;
+				fileWriting<<machineLine<<endl;
+				currentLineNumber++;
+			}
 		}
 	}
 }
 	EXIT:
 	fileWriting.close();
+	fileWriting2.close();
 	fileReading.close();
 }
 //End of main
