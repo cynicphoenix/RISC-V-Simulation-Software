@@ -581,7 +581,14 @@ void printRegisterFile()
 	cout << "-------------------------------------------" << endl;
 }
 //End of print RegisterFile
-
+void runCode()
+{
+	fetch();
+	decode();
+	returnAddress=alu(ALU_OP, B_SELECT, immediate);
+	memoryStage(Y_SELECT, MEM_READ, MEM_WRITE, RZ, RB);
+	writeBack(RF_WRITE,addressC);
+}
 //main function
 int main()
 {
@@ -591,5 +598,6 @@ int main()
 
 	updateMemory(); //Update memory with data & instructions
 	printMemory();
+	runCode();
 	//printRegisterFile();
 }
