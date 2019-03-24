@@ -36,13 +36,13 @@ using namespace std;
 
 unsigned char memory[1 << 22]; //Processor Memory
 int regArray[32] = {0};
-int PC = 0;				//Program Counter
+unsigned int PC = 0;				//Program Counter
 int IR;					//Instruction Register
 int RA, RB, RZ, RY, RM; //Interstage Buffers
-int addressA, addressB;
+unsigned int addressA, addressB;
 int immediate;	 // for immediate values
 int addressC;	  //destination register
-int returnAddress; //Return Address in case of jal/jalr
+unsigned int returnAddress; //Return Address in case of jal/jalr
 int ALU_OP, B_SELECT, PC_SELECT, INC_SELECT, Y_SELECT;
 int MEM_READ;
 int MEM_WRITE;
@@ -53,7 +53,7 @@ void readWriteRegFile(int RF_WRITE, int addressA, int addressB, int addressC)
 {
 	if (RF_WRITE == 1)
 	{
-		regArray[addressC] = RY;
+		if(addressC) regArray[addressC] = RY;
 		return;
 	}
 
@@ -87,7 +87,6 @@ int readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, int data_w = 0
 	if (MEM_WRITE == 1)
 	{ //sb
 		memory[address] = data_w;
-		cout << address << ' ' << data_w << endl;
 	}
 	else if (MEM_WRITE == 2)
 	{ //sh
@@ -112,7 +111,7 @@ lli iag(int INC_SELECT, int PC_SELECT, lli immediate = 0)
 {
 	lli PC_Temp = PC + 4;
 	if (PC_SELECT == 0)
-		PC = RA;
+		PC = RZ;
 	else
 	{
 		if (INC_SELECT == 1)
@@ -138,7 +137,7 @@ RA & RB will be updated after this stage
 */
 void decode()
 {
-	int opcode = IR << 25;
+	unsigned int opcode = IR << 25;
 	opcode >>= 25;
 	unsigned int funct3 = IR << 17;
 	funct3 >>= 29;
@@ -150,9 +149,9 @@ void decode()
 	{
 		RF_WRITE = 1;
 		int imm = IR >> 20;
-		int rs1 = IR << 12;
+		unsigned int rs1 = IR << 12;
 		rs1 >>= 27;
-		int rd = IR << 20;
+		unsigned int rd = IR << 20;
 		rd >>= 27;
 		B_SELECT = 1;
 		ALU_OP = 0;
@@ -175,9 +174,9 @@ void decode()
 	{
 		RF_WRITE = 1;
 		int imm = IR >> 20;
-		int rs1 = IR << 12;
+		unsigned int rs1 = IR << 12;
 		rs1 >>= 27;
-		int rd = IR << 20;
+		unsigned int rd = IR << 20;
 		rd >>= 27;
 
 		B_SELECT = 1;
@@ -186,7 +185,6 @@ void decode()
 		addressC = rd;
 		MEM_READ = 3;
 		MEM_WRITE = 0;
-		cout<<funct3<<endl;
 		if (funct3 == 0) ///addi
 		{
 			ALU_OP = 0;
@@ -194,7 +192,7 @@ void decode()
 
 		else if (funct3 == 1) //slli
 		{
-			int shamt = IR << 7;
+			unsigned int shamt = IR << 7;
 			shamt >>= 27;
 			immediate = shamt;
 			ALU_OP = 7;
@@ -203,7 +201,6 @@ void decode()
 		else if (funct3 == 2) //slti
 		{
 			ALU_OP = 20;
-			cout<<"Ssssssssssss";
 		}
 
 		else if (funct3 == 3) //sltiu
@@ -218,7 +215,7 @@ void decode()
 
 		else if (funct3 == 5) //srli
 		{
-			int shamt = IR << 7;
+			unsigned int shamt = IR << 7;
 			shamt >>= 27;
 			immediate = shamt;
 			if (funct7 == 0)
@@ -247,7 +244,7 @@ void decode()
 		addressC >>= 27;
 		MEM_READ = 0;
 		MEM_WRITE = 0;
-		int shamt = IR << 7;
+		unsigned int shamt = IR << 7;
 		shamt >>= 27;
 
 		B_SELECT = 1;
@@ -277,15 +274,15 @@ void decode()
 	else if (opcode == OPCODE_I4)
 	{ //for jalr
 		RF_WRITE = 1;
-		int imm = IR << 20;
-		int rs1 = IR << 12;
+		int imm = IR >> 20;
+		unsigned int rs1 = IR << 12;
 		rs1 >>= 27;
-		int rd = IR << 20;
+		unsigned int rd = IR << 20;
 		rd >>= 27;
 		PC_SELECT = 0;
-		B_SELECT = 0;
+		B_SELECT = 1;
 		Y_SELECT = 2;
-		ALU_OP = -1;
+		ALU_OP = 22;
 		addressA = rs1;
 		immediate = imm;
 		addressC = rd;
@@ -321,7 +318,7 @@ void decode()
 	}
 
 	else if (opcode == OPCODE_U1) //auipc
-	{
+	{   //cout<<"AUIPCFOUND      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"<<endl;
 		immediate = IR >> 12;
 
 		addressC = IR << 20;
@@ -332,7 +329,6 @@ void decode()
 		MEM_WRITE = 0;
 		RF_WRITE = 1;
 		ALU_OP = 12;
-		cout<<immediate<<' '<<PC<<endl;
 	}
 
 	else if (opcode == OPCODE_U2) //lui
@@ -341,7 +337,6 @@ void decode()
 
 		addressC = IR << 20;
 		addressC >>= 27;
-
 		ALU_OP = 13;
 		B_SELECT = 1;
 		MEM_READ = 0;
@@ -351,11 +346,11 @@ void decode()
 
 	else if (opcode == OPCODE_R1 || opcode == OPCODE_R2)
 	{
-		int rs1 = IR << 12;
+		unsigned int rs1 = IR << 12;
 		rs1 >>= 27;
-		int rs2 = IR << 7;
+		unsigned int rs2 = IR << 7;
 		rs2 >>= 27;
-		int rd = IR << 20;
+		unsigned int rd = IR << 20;
 		rd >>= 27;
 		RF_WRITE = 1;
 		B_SELECT = 0;
@@ -411,18 +406,19 @@ void decode()
 		MEM_READ = 0;
 		MEM_WRITE = 0;
 	}
-
+	
 	else if (opcode == OPCODE_UJ)
 	{
-		int rd = IR << 20;
+		unsigned int rd = IR << 20;
 		rd >>= 27;
 		addressC = rd;
-		int tmp1 = IR >> 12;
-		int bit_20 = tmp1 & (1 << 19);
-		int bit_1_10 = (tmp1 >> 9) & ((1 << 11) - 1);
-		int bit_11 = (tmp1 & (1 << 8)) << 2;
-		int bit_19_12 = (tmp1 << 12) >> 1;
+		unsigned int tmp1 = IR >> 12;
+		unsigned int bit_20 = tmp1 & (1 << 19);
+		unsigned int bit_1_10 = (tmp1 >> 9) & ((1 << 10) - 1);
+		unsigned int bit_11 = (tmp1 & (1 << 8)) << 2;
+		unsigned int bit_19_12 = (tmp1 << 24) >> 12;
 		immediate = bit_1_10 | bit_11 | bit_19_12 | bit_20;
+		immediate <<= 1;
 		RF_WRITE = 1;
 		B_SELECT = 0;
 		INC_SELECT = 1;
@@ -436,17 +432,18 @@ void decode()
 
 	else if (opcode == OPCODE_SB1)
 	{
-		int rs1 = IR << 12;
+		unsigned int rs1 = IR << 12;
 		rs1 >>= 27;
-		int rs2 = IR << 7;
-		rs2 <<= 27;
-		int rd = IR << 20;
+		unsigned int rs2 = IR << 7;
+		rs2 >>= 27;
+		unsigned int rd = IR << 20;
 		rd >>= 27;
-		int bit_11 = (rd & 1) << 10;
-		int bit_1_4 = rd >> 1;
-		int bit_12 = (funct7 >> 6) << 11;
-		int bit_5_10 = (funct7 - bit_12 << 6) << 4;
-		int immediate = bit_1_4 | bit_5_10 | bit_11 | bit_12;
+		unsigned int bit_11 = (rd & 1) << 10;
+		unsigned int bit_1_4 = rd >> 1;
+		unsigned int bit_12 = (funct7 >> 6) << 11;
+		unsigned int bit_5_10 = (funct7 - bit_12 << 6) << 4;
+		immediate = bit_1_4 | bit_5_10 | bit_11 | bit_12;
+		immediate <<= 1;
 		RF_WRITE = 0;
 		B_SELECT = 0;
 		if (funct3 == 5 || funct3 == 7) //bge,bgeu
@@ -455,7 +452,7 @@ void decode()
 			ALU_OP = 4;
 		else if (funct3 == 0) //beq
 			ALU_OP = 2;
-		else if (funct3 == 1) //bne
+		else if (funct3 == 1) //bne Update task2.cpp
 			ALU_OP = 5;
 		addressA = rs1;
 		addressB = rs2;
@@ -494,16 +491,42 @@ int alu(int ALU_OP, int B_SELECT, int immediate = 0)
 		RZ = InA & InB;
 
 	else if (ALU_OP == 2) //beq
-		return InA == InB;
-
+	{
+		if(InA == InB){
+			INC_SELECT = 1;
+			PC-=4;
+			iag(INC_SELECT, 1, immediate);
+		}
+	}
 	else if (ALU_OP == 3) //bge
-		return InA >= InB;
+	{
+		if (InA >= InB)
+		{
+			INC_SELECT = 1;
+			PC -= 4;
+			iag(INC_SELECT, 1, immediate);
+		}
+	}
 
 	else if (ALU_OP == 4) //blt
-		return InA < InB;
+	{
+		if (InA < InB)
+		{
+			INC_SELECT = 1;
+			PC -= 4;
+			iag(INC_SELECT, 1, immediate);
+		}
+	}
 
 	else if (ALU_OP == 5) //bne
-		return InA != InB;
+	{
+		if (InA != InB)
+		{
+			INC_SELECT = 1;
+			PC -= 4;
+			iag(INC_SELECT, 1, immediate);
+		}
+	}
 
 	else if (ALU_OP == 6) //ori
 		RZ = InA | InB;
@@ -519,8 +542,9 @@ int alu(int ALU_OP, int B_SELECT, int immediate = 0)
 		RZ = InA ^ InB;
 
 	else if (ALU_OP == 12) //auipc
-		RZ = PC - 4 + (InB << 12);
-
+		{	//cout<<PC<<" AUIPC"<<endl;
+			RZ = PC - 4 + (InB << 12);
+		}
 	else if (ALU_OP == 13)
 		RZ = InB << 12;
 
@@ -535,18 +559,21 @@ int alu(int ALU_OP, int B_SELECT, int immediate = 0)
 		RZ = InA >> InB;
 		RZ |= InA && (1 << 31);
 	}
-
-	// for jalr ALU_OP = 10
-	// for sd, sw, sh, sb ALU_OP = 11
-	// for auipc use ALU_OP = 12
-	// for lui use ALU_op = 13
+	else if(ALU_OP==22)
+	{
+		RZ=InA+InB;
+		returnAddress=iag(0, PC_SELECT, immediate);
+	}
+	else if(ALU_OP==-1){
+		PC-=4;
+		returnAddress=iag(INC_SELECT, 1, immediate);
+	}
 }
 //end of ALU function
 
-	/*Stage 4: Memory & RY get updated
+/*Stage 4: Memory & RY get updated
 Input: Y_SELECT, MEM_READ, MEM_WRITE, address from RZ/RM, data*/
-	void
-	memoryStage(int Y_SELECT, int MEM_READ, int MEM_WRITE, int address = 0, int data = 0)
+void memoryStage(int Y_SELECT, int MEM_READ, int MEM_WRITE, int address = 0, int data = 0)
 {
 	int dataFromMem = readWriteMemory(MEM_READ, MEM_WRITE, address, data);
 	if (Y_SELECT == 0) RY = RZ;
@@ -646,7 +673,7 @@ void runCode()
 {
 	while (1)
 	{
-		if (memory[PC] == 0 && memory[PC + 1] == 0 && PC[memory + 2] == 0 && PC[memory + 3] == 0)
+		if (memory[PC] == 0 && memory[PC + 1] == 0 && memory[PC + 2] == 0 && memory[PC + 3] == 0)
 			break;
 		fetch();
 		decode();
@@ -662,10 +689,11 @@ int main()
 	regArray[2] = 0x7FFFFC;
 	regArray[3] = 0x100000;
 
-	printRegisterFile();
+	//printRegisterFile();
 	updateMemory(); //Update memory with data & instructions
-	printMemory();
+	//printMemory();
 	runCode();
-	printMemory();
+	//printMemory();jalr x0, 0(x1)
+
 	printRegisterFile();
 }
