@@ -1,3 +1,4 @@
+
 // Task 2: Data Path & Control Circuitry
 
 #include <bits/stdc++.h>
@@ -182,11 +183,11 @@ void decode()
 		immediate = imm;
 		addressC = rd;
 		Y_SELECT = 1;
-		MEM_READ = 3;
+		MEM_READ = 3; //Changes to accomodate load and store words and so on.
 		MEM_WRITE = 0;
 	}
 
-	else if (opcode == OPCODE_I2)
+	else if (opcode == OPCODE_I2)       
 	{
 		RF_WRITE = 1;
 		int imm = IR >> 20;
@@ -202,12 +203,12 @@ void decode()
 		MEM_READ = 3;
 		MEM_WRITE = 0;
 
-		if (funct3 == 0)
+		if (funct3 == 0)           ///addi
 		{
 			ALU_OP = 0;
 		}
 
-		else if (funct3 == 1)
+		else if (funct3 == 1)		//slli
 		{
 			int shamt = IR << 7;
 			shamt >>= 27;
@@ -215,35 +216,38 @@ void decode()
 			ALU_OP = 7;
 		}
 
-		else if (funct3 == 2)
+		else if (funct3 == 2)		//slti
 		{
-			ALU_OP = 7;
+			ALU_OP = 20;
 		}
 
-		else if (funct3 == 3)
+		else if (funct3 == 3)		//sltiu
 		{
-			ALU_OP = 7;
+			ALU_OP = 20;
 		}
 
-		else if (funct3 == 4)
+		else if (funct3 == 4)		//xori	
 		{
 			ALU_OP = 8;
 		}
 
-		else if (funct3 == 5)
+		else if (funct3 == 5)		//srli
 		{
 			int shamt = IR << 7;
 			shamt >>= 27;
 			immediate = shamt;
-			ALU_OP = 7;
+			if(funct7==0)
+				ALU_OP=19;
+			else ALU_OP=21;
+
 		}
 
-		else if (funct3 == 6)
+		else if (funct3 == 6)	//ori
 		{
 			ALU_OP = 6;
 		}
 
-		else if (funct3 == 7)
+		else if (funct3 == 7)	//andi
 		{
 			ALU_OP = 1;
 		}
@@ -263,22 +267,24 @@ void decode()
 
 		B_SELECT = 1;
 
-		if (funct3 == 0)
+		if (funct3 == 0)    //addiw
 		{
 			ALU_OP = 0;
 			immediate = IR >> 20;
 		}
 
-		else if (funct3 == 1)
+		else if (funct3 == 1)   //slliw
 		{
 			ALU_OP = 7;
 			immediate = shamt;
 		}
 
-		else if (funct3 == 5)
+		else if (funct3 == 5)  //srliw,sraiw
 		{
 			immediate = shamt;
-			ALU_OP = 7;
+			if(funct7==0)
+				ALU_OP = 19;
+			else ALU_OP = 21;
 		}
 	}
 
@@ -293,7 +299,7 @@ void decode()
 		PC_SELECT = 0;
 		B_SELECT = 0;
 		Y_SELECT = 2;
-		ALU_OP = 10;
+		ALU_OP = -1;
 		addressA = rs1;
 		immediate = imm;
 		addressC = rd;
@@ -301,7 +307,7 @@ void decode()
 		MEM_WRITE = 0;
 	}
 
-	else if (opcode == OPCODE_S1)
+	else if (opcode == OPCODE_S1) //store
 	{
 		int imm1 = IR << 20;
 		imm1 >>= 27;
@@ -325,10 +331,10 @@ void decode()
 		MEM_READ = 0;
 		B_SELECT = 1;
 		RF_WRITE = 0;
-		ALU_OP = 11;
+		ALU_OP = 0;
 	}
 
-	else if (opcode == OPCODE_U1)
+	else if (opcode == OPCODE_U1) //auipc
 	{
 		immediate = IR >> 11;
 
@@ -342,7 +348,7 @@ void decode()
 		ALU_OP = 12;
 	}
 
-	else if (opcode == OPCODE_U2)
+	else if (opcode == OPCODE_U2)  //lui
 	{
 		immediate = IR >> 11;
 
@@ -366,7 +372,52 @@ void decode()
 		rd >>= 27;
 		RF_WRITE = 1;
 		B_SELECT = 0;
-		ALU_OP = 0;
+		if (funct3 == 0)           
+		{
+			if(funct7==0)
+				ALU_OP = 0;       //add,addw
+			else
+				ALU_OP = 18;	  //sub,subw
+
+		}
+
+		else if (funct3 == 1)	  //sll,sllw
+		{
+			
+			ALU_OP = 7;
+		}
+
+		else if (funct3 == 2)		//slt
+		{
+			ALU_OP = 20;
+		}
+
+		else if (funct3 == 3)		//sltu
+		{
+			ALU_OP = 20;
+		}
+
+		else if (funct3 == 4)		//xor	
+		{
+			ALU_OP = 8;
+		}
+
+		else if (funct3 == 5)		
+		{
+			if(funct7==0)
+				ALU_OP=19;	//srl,srlw
+			else ALU_OP=21;	//sra,sraw
+		}
+
+		else if (funct3 == 6)	//or
+		{
+			ALU_OP = 6;
+		}
+
+		else if (funct3 == 7)	//and
+		{
+			ALU_OP = 1;
+		}
 		addressA = rs1;
 		addressB = rs2;
 		addressC = rd;
@@ -411,13 +462,13 @@ void decode()
 		int immediate = bit_1_4 | bit_5_10 | bit_11 | bit_12;
 		RF_WRITE = 0;
 		B_SELECT = 0;
-		if (funct3 == 5 || funct3 == 7)
+		if (funct3 == 5 || funct3 == 7)	//bge,bgeu
 			ALU_OP = 3;
-		else if (funct3 == 4 || funct3 == 6)
+		else if (funct3 == 4 || funct3 == 6)	//blt,bltu
 			ALU_OP = 4;
-		else if (funct3 == 0)
+		else if (funct3 == 0)		//beq
 			ALU_OP = 2;
-		else if (funct3 == 1)
+		else if (funct3 == 1)		//bne
 			ALU_OP = 5;
 		addressA = rs1;
 		addressB = rs2;
@@ -425,6 +476,7 @@ void decode()
 		MEM_READ = 0;
 		MEM_WRITE = 0;
 	}
+	readWriteRegFile(0, addressA, addressB, addressC);
 }
 //End of decode
 
@@ -436,45 +488,64 @@ Update RZ
 Output: only for branch instruction
 branch taken:1
 branch not taken:0 */
-int alu(int ALU_OP, int B_SELECT, lli immediate = 0)
+int alu(int ALU_OP, int B_SELECT, int immediate = 0)
 {
-	lli InA = RA;
-	lli InB;
+	int InA = RA;
+	int InB;
 	if (B_SELECT == 0)
 		InB = RB;
 	else
 		InB = immediate;
 
-	if (ALU_OP == 0) //Add, addi, addw, addiw, all load, all store,
+	if (ALU_OP == 0) //addi,load,
 		RZ = InA + InB;
 
-	else if (ALU_OP == 1) //And, andi
+	else if (ALU_OP == 1) //andi
 		RZ = InA & InB;
 
-	else if (ALU_OP == 2) //Beq
+	else if (ALU_OP == 2) //beq
 		return InA == InB;
 
-	else if (ALU_OP == 3) //Bge, bgeu
+	else if (ALU_OP == 3) //bge
 		return InA >= InB;
 
-	else if (ALU_OP == 4) //Blt, bltu
+	else if (ALU_OP == 4) //blt
 		return InA < InB;
 
-	else if (ALU_OP == 5) //Bne
+	else if (ALU_OP == 5) //bne
 		return InA != InB;
 
-	else if (ALU_OP == 6) //Or
+	else if (ALU_OP == 6) //ori
 		RZ = InA | InB;
 
 	//incomplete from here:
-	else if (ALU_OP == 7) //slli, sll, sllw, slliw
-		RZ = InA;
+	else if (ALU_OP == 7) //slli
+		RZ = InA<<InB;
 
-	else if (ALU_OP == 7) //sub, subw
+	else if (ALU_OP == 18) 
 		RZ = InA - InB;
 
-	else if (ALU_OP == 8) //Xor, xori
+	else if (ALU_OP == 8) //xori
 		RZ = InA ^ InB;
+
+	else if(ALU_OP == 12)  //auipc
+		RZ = PC + InB<<12;
+
+	else if(ALU_OP == 13)
+		RZ = InB<<12;
+
+	else if(ALU_OP==19)	//srli
+		RZ = InA>>InB;
+
+	else if (ALU_OP == 20)	//slti,sltiu
+		RZ = (InA<InB)?1:0;
+
+	else if (ALU_OP==21)
+		{
+			RZ= InA>>InB;
+			RZ |= InA && (1<<31);
+		}	
+
 	// for jalr ALU_OP = 10
 	// for sd, sw, sh, sb ALU_OP = 11
 	// for auipc use ALU_OP = 12
@@ -601,3 +672,5 @@ int main()
 	runCode();
 	//printRegisterFile();
 }
+
+
