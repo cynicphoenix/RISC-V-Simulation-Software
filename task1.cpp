@@ -718,7 +718,7 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 		opcode = "0011011", funct3 = "101", funct7 = "0100000", type = "I", ISubType = 2;
 
 	if(instruction == "slti")
-		opcode = "0010011", funct3 = "001", type = "I";
+		opcode = "0010011", funct3 = "010", type = "I";
 
 	if(instruction == "sltiu")
 		opcode = "0010011", funct3 = "011", type = "I";
@@ -727,7 +727,7 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 		opcode = "0010011", funct3 = "100", type = "I";
 
 	if(instruction == "slti")
-		opcode = "0010011", funct3 = "001", type = "I";
+		opcode = "0010011", funct3 = "010", type = "I";
 
 	if(instruction == "ori")
 		opcode = "0010011", funct3 = "110", type = "I";
