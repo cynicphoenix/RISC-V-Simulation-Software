@@ -1,7 +1,4 @@
-/* Task 2: Data Path & Control Circuitry
-All ALU Operations are not added
-Stages will be defined later on
-Update control Circuitry */
+// Task 2: Data Path & Control Circuitry
 
 #include <bits/stdc++.h>
 #define lli long long int
@@ -97,9 +94,10 @@ lli readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, lli data_w = 0
 			return data;
 		}
 	}
-	if (MEM_READ == 1)
+	if (MEM_WRITE == 1)
 	{ //sb
 		memory[address] = data_w;
+		cout << address << ' ' << data_w << endl;
 	}
 	else if (MEM_WRITE == 2)
 	{ //sh
@@ -131,7 +129,7 @@ lli readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, lli data_w = 0
 //End of readWriteMemory
 
 /*Instruction Address Generator
-returns return Address*/
+returns returnAddress*/
 lli iag(int INC_SELECT, int PC_SELECT, lli immediate = 0)
 {
 	lli PC_Temp = PC + 4;
@@ -156,7 +154,7 @@ void fetch()
 }
 //end of fetch
 
-/*Task to be completed by Soumil & Deepak
+/*
 Stage 2: Decode Stage
 RA & RB will be updated after this stage 
 */
@@ -425,10 +423,9 @@ void decode()
 		MEM_WRITE = 0;
 	}
 }
-
 //End of decode
 
-/* Arithmetic Logic Unit(not complete)
+/* Arithmetic Logic Unit
 Input: ALU_OP, MUXB select, immediate(if any)
 (these input will be provided by decode stage)
 Result:
@@ -503,6 +500,85 @@ void writeBack(int RF_WRITE, int addressC)
 }
 //End of writeBack
 
+//Update memory with data & instructions
+void updateMemory()
+{
+	string machineLine;
+	string machineCode;
+	fstream fileReading;
+
+	map<char, int> hexadecimal;
+	for (int i = 0; i <= 9; ++i)
+		hexadecimal[i + '0'] = i;
+	for (int i = 0; i <= 6; ++i)
+		hexadecimal[i + 'A'] = i + 10;
+
+	fileReading.open("machineData.txt");
+	while (getline(fileReading, machineLine))
+	{
+		lli value = 0, address = 0;
+		string type = "";
+		int i = 0;
+		while (machineLine[i] != ' ')
+			value = value * 10 + (machineLine[i++] - '0');
+		i = i + 3;
+		while (machineLine[i] != ' ')
+			address = address * 16 + hexadecimal[machineLine[i++]];
+		i++;
+
+		while (i < machineLine.length() && machineLine[i] != ' ')
+			type += machineLine[i++];
+		if (type == "byte")
+			readWriteMemory(0, 1, address, value);
+		else if (type == "halfword")
+			readWriteMemory(0, 2, address, value);
+		else if (type == "word")
+			readWriteMemory(0, 3, address, value);
+		else if (type == "doubleword")
+			readWriteMemory(0, 4, address, value);
+	}
+	fileReading.close();
+
+	fileReading.open("machineCode.mc");
+	while (getline(fileReading, machineLine))
+	{
+		lli value = 0, address = 0;
+
+		int i = 2; //initially : 0x
+		while (machineLine[i] != ' ')
+			address = address * 16 + hexadecimal[machineLine[i++]];
+
+		i += 3; //between : 0x
+		while (i < machineLine.length())
+			value = value * 16 + hexadecimal[machineLine[i++]];
+
+		readWriteMemory(0, 3, address, value);
+	}
+	fileReading.close();
+}
+//End of updateMemory
+
+//Prints memory that has been alloted with data or instruction!
+void printMemory()
+{
+	cout << "Showing Memory..." << endl;
+	for (int i = 0; i < 1 << 22; i++)
+		if (memory[i] != '\0')
+			cout << i << "\t" << (int)(unsigned char)memory[i] << endl;
+	cout << "Memory File end here!" << endl;
+}
+//End of printMemory
+
+//Prints all register file & their value
+void printRegisterFile()
+{
+	cout << "-------------Register File-----------------" << endl;
+	for (int i = 0; i < 32; i++)
+		cout << "REGISTER x" << i << "\t" << regArray[i] << endl;
+	cout << "-------------------------------------------" << endl;
+}
+//End of print RegisterFile
+
 //main function
 int main()
 {
@@ -510,34 +586,7 @@ int main()
 	regArray[2] = 0x7FFFFC;
 	regArray[3] = 0x100000;
 
-	string machineLine;
-	string machineCode;
-	fstream fileReading;
-	fileReading.open("machineData.txt");
-	while (getline(fileReading, machineLine))
-	{
-		lli value=0, address=0;
-		string type="";
-		int i=0;
-		while(machineLine[i]!=' ')
-			value=value*10+(machineLine[i++]-'0');
-		i=i+3;
-		while(machineLine[i]!=' ')
-			address=address*16+(machineLine[i++]-'0');
-		i++;
-	
-		while(i<machineLine.length() && machineLine[i]!=' ')
-			type+=machineLine[i++];
-		if(type=="byte")	
-        	readWriteMemory(0,1,address,value);
-		else if(type=="halfword")
-			readWriteMemory(0,2,address,value);
-		else if(type=="word")
-			readWriteMemory(0,3,address,value);
-		else if(type=="doubleword")
-			readWriteMemory(0,4,address,value);
-		//store instructions & data in memory
-		//incomplete
-	}
-
+	updateMemory(); //Update memory with data & instructions
+	printMemory();
+	//printRegisterFile();
 }
