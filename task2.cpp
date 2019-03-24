@@ -34,15 +34,15 @@ using namespace std;
 #define f7_0 0
 #define f7_1 32
 
-char memory[1 << 22]; //Processor Memory
-lli regArray[32] = {0};
-lli PC = 0;				//Program Counter
-lli IR;					//Instruction Register
-lli RA, RB, RZ, RY, RM; //Interstage Buffers
-lli addressA, addressB;
-lli immediate;	 // for immediate values
-lli addressC;	  //destination register
-lli returnAddress; //Return Address in case of jal/jalr
+unsigned char memory[1 << 22]; //Processor Memory
+int regArray[32] = {0};
+int PC = 0;				//Program Counter
+int IR;					//Instruction Register
+int RA, RB, RZ, RY, RM; //Interstage Buffers
+int addressA, addressB;
+int immediate;	 // for immediate values
+int addressC;	  //destination register
+int returnAddress; //Return Address in case of jal/jalr
 int ALU_OP, B_SELECT, PC_SELECT, INC_SELECT, Y_SELECT;
 int MEM_READ;
 int MEM_WRITE;
@@ -56,13 +56,14 @@ void readWriteRegFile(int RF_WRITE, int addressA, int addressB, int addressC)
 		regArray[addressC] = RY;
 		return;
 	}
+	
 	RA = regArray[addressA];
 	RB = regArray[addressB];
 }
 //End of readWriteRegFile
 
 //Processor Memory Interface
-lli readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, lli data_w = 0)
+int readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, lli data_w = 0)
 {
 	if (MEM_READ > 0)
 	{
@@ -150,7 +151,7 @@ lli iag(int INC_SELECT, int PC_SELECT, lli immediate = 0)
 //Stage 1: Fetch Stage
 void fetch()
 {
-	IR = readWriteMemory(1, 0, PC);
+	IR = readWriteMemory(3, 0, PC);
 	returnAddress = iag(0, 1);
 }
 //end of fetch
@@ -316,6 +317,7 @@ void decode()
 
 	else if (opcode == OPCODE_S1) //store
 	{
+
 		int imm1 = IR << 20;
 		imm1 >>= 27;
 		int imm2 = IR >> 25;
@@ -325,8 +327,9 @@ void decode()
 		addressB >>= 27;
 
 		addressA = IR << 12;
-		addressA = IR >> 27;
-
+		cout<<addressA<<' ';
+		addressA >>= 27;
+		cout << addressA << ' ';
 		if (funct3 == 0)
 			MEM_WRITE = 1;
 		else if (funct3 == 1)
@@ -374,11 +377,12 @@ void decode()
 		int rs1 = IR << 12;
 		rs1 >>= 27;
 		int rs2 = IR << 7;
-		rs2 <<= 27;
+		rs2 >>= 27;
 		int rd = IR << 20;
 		rd >>= 27;
 		RF_WRITE = 1;
 		B_SELECT = 0;
+		cout<<rs2<<endl;
 		if (funct3 == 0)           
 		{
 			if(funct7==0)
@@ -483,7 +487,9 @@ void decode()
 		MEM_READ = 0;
 		MEM_WRITE = 0;
 	}
+	//cout<<addressA<<" "<<addressB<<" "<<RA<<" "<<RB<<endl;
 	readWriteRegFile(0, addressA, addressB, addressC);
+	//cout << addressA << " " << addressB << " " << RA << " " << RB << endl;
 }
 //End of decode
 
@@ -503,6 +509,7 @@ int alu(int ALU_OP, int B_SELECT, int immediate = 0)
 		InB = RB;
 	else
 		InB = immediate;
+		//cout<<RA<<" "<<RB<<endl;
 
 	if (ALU_OP == 0) //addi,load,
 		RZ = InA + InB;
@@ -645,7 +652,7 @@ void printMemory()
 	cout << "Showing Memory..." << endl;
 	for (int i = 0; i < 1 << 22; i++)
 		if (memory[i] != '\0')
-			cout << i << "\t" << (int)(unsigned char)memory[i] << endl;
+			cout << i << "\t" << (int)memory[i] << endl;
 	cout << "Memory File end here!" << endl;
 }
 //End of printMemory
@@ -660,12 +667,15 @@ void printRegisterFile()
 }
 //End of print RegisterFile
 void runCode()
-{
-	fetch();
-	decode();
-	returnAddress=alu(ALU_OP, B_SELECT, immediate);
-	memoryStage(Y_SELECT, MEM_READ, MEM_WRITE, RZ, RB);
-	writeBack(RF_WRITE,addressC);
+{   while(1)
+	{	if(memory[PC]==0 && memory[PC+1]==0 && PC[memory+2]==0 && PC[memory+3]==0)
+			break;
+		fetch();
+		decode();
+		returnAddress=alu(ALU_OP, B_SELECT, immediate);
+		memoryStage(Y_SELECT, MEM_READ, MEM_WRITE, RZ, RB);
+		writeBack(RF_WRITE,addressC);
+	}
 }
 //main function
 int main()
@@ -674,10 +684,12 @@ int main()
 	regArray[2] = 0x7FFFFC;
 	regArray[3] = 0x100000;
 
+	printRegisterFile();
 	updateMemory(); //Update memory with data & instructions
 	printMemory();
 	runCode();
-	//printRegisterFile();
+	printMemory();
+	printRegisterFile();
 }
 
 
