@@ -56,14 +56,14 @@ void readWriteRegFile(int RF_WRITE, int addressA, int addressB, int addressC)
 		regArray[addressC] = RY;
 		return;
 	}
-	
+
 	RA = regArray[addressA];
 	RB = regArray[addressB];
 }
 //End of readWriteRegFile
 
 //Processor Memory Interface
-int readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, lli data_w = 0)
+int readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, int data_w = 0)
 {
 	if (MEM_READ > 0)
 	{
@@ -83,18 +83,6 @@ int readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, lli data_w = 0
 			data += (int)memory[address + 3] << 24;
 			return data;
 		}
-		else if (MEM_READ == 4)
-		{ //ld
-			lli data = memory[address];
-			data += (lli)memory[address + 1] << 8;
-			data += (lli)memory[address + 2] << 16;
-			data += (lli)memory[address + 3] << 24;
-			data += (lli)memory[address + 3] << 32;
-			data += (lli)memory[address + 3] << 40;
-			data += (lli)memory[address + 3] << 48;
-			data += (lli)memory[address + 3] << 56;
-			return data;
-		}
 	}
 	if (MEM_WRITE == 1)
 	{ //sb
@@ -103,7 +91,7 @@ int readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, lli data_w = 0
 	}
 	else if (MEM_WRITE == 2)
 	{ //sh
-		memory[address] = data_w && (1 << 8 - 1);
+		memory[address] = data_w && ((1 << 8) - 1);
 		memory[address + 1] = data_w >> 8;
 	}
 	else if (MEM_WRITE == 3)
@@ -113,18 +101,6 @@ int readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, lli data_w = 0
 		memory[address + 1] = (data_w & (setb8 << 8)) >> 8;
 		memory[address + 2] = (data_w & (setb8 << 16)) >> 16;
 		memory[address + 3] = data_w >> 24;
-	}
-	else if (MEM_WRITE == 4)
-	{ //sd
-		lli setb8 = 1 << 8 - 1;
-		memory[address] = data_w & setb8;
-		memory[address + 1] = (data_w & (setb8 << 8)) >> 8;
-		memory[address + 2] = (data_w & (setb8 << 16)) >> 16;
-		memory[address + 3] = (data_w & (setb8 << 24)) >> 24;
-		memory[address + 4] = (data_w & (setb8 << 32)) >> 32;
-		memory[address + 5] = (data_w & (setb8 << 16)) >> 40;
-		memory[address + 6] = (data_w & (setb8 << 48)) >> 48;
-		memory[address + 7] = data_w >> 56;
 	}
 	return 0;
 }
@@ -164,9 +140,9 @@ void decode()
 {
 	int opcode = IR << 25;
 	opcode >>= 25;
-	int funct3 = IR << 17;
+	unsigned int funct3 = IR << 17;
 	funct3 >>= 29;
-	int funct7 = IR >> 25;
+	unsigned int funct7 = IR >> 25;
 	PC_SELECT = 1;
 	INC_SELECT = 0;
 	Y_SELECT = 0;
@@ -191,11 +167,11 @@ void decode()
 		else if (funct3 == 2)
 			MEM_READ = 3;
 		else if (funct3 == 3)
-			MEM_READ = 4; 
+			MEM_READ = 4;
 		MEM_WRITE = 0;
 	}
 
-	else if (opcode == OPCODE_I2)       
+	else if (opcode == OPCODE_I2)
 	{
 		RF_WRITE = 1;
 		int imm = IR >> 20;
@@ -210,13 +186,13 @@ void decode()
 		addressC = rd;
 		MEM_READ = 3;
 		MEM_WRITE = 0;
-
-		if (funct3 == 0)           ///addi
+		cout<<funct3<<endl;
+		if (funct3 == 0) ///addi
 		{
 			ALU_OP = 0;
 		}
 
-		else if (funct3 == 1)		//slli
+		else if (funct3 == 1) //slli
 		{
 			int shamt = IR << 7;
 			shamt >>= 27;
@@ -224,38 +200,39 @@ void decode()
 			ALU_OP = 7;
 		}
 
-		else if (funct3 == 2)		//slti
+		else if (funct3 == 2) //slti
+		{
+			ALU_OP = 20;
+			cout<<"Ssssssssssss";
+		}
+
+		else if (funct3 == 3) //sltiu
 		{
 			ALU_OP = 20;
 		}
 
-		else if (funct3 == 3)		//sltiu
-		{
-			ALU_OP = 20;
-		}
-
-		else if (funct3 == 4)		//xori	
+		else if (funct3 == 4) //xori
 		{
 			ALU_OP = 8;
 		}
 
-		else if (funct3 == 5)		//srli
+		else if (funct3 == 5) //srli
 		{
 			int shamt = IR << 7;
 			shamt >>= 27;
 			immediate = shamt;
-			if(funct7==0)
-				ALU_OP=19;
-			else ALU_OP=21;
-
+			if (funct7 == 0)
+				ALU_OP = 19;
+			else
+				ALU_OP = 21;
 		}
 
-		else if (funct3 == 6)	//ori
+		else if (funct3 == 6) //ori
 		{
 			ALU_OP = 6;
 		}
 
-		else if (funct3 == 7)	//andi
+		else if (funct3 == 7) //andi
 		{
 			ALU_OP = 1;
 		}
@@ -275,24 +252,25 @@ void decode()
 
 		B_SELECT = 1;
 
-		if (funct3 == 0)    //addiw
+		if (funct3 == 0) //addiw
 		{
 			ALU_OP = 0;
 			immediate = IR >> 20;
 		}
 
-		else if (funct3 == 1)   //slliw
+		else if (funct3 == 1) //slliw
 		{
 			ALU_OP = 7;
 			immediate = shamt;
 		}
 
-		else if (funct3 == 5)  //srliw,sraiw
+		else if (funct3 == 5) //srliw,sraiw
 		{
 			immediate = shamt;
-			if(funct7==0)
+			if (funct7 == 0)
 				ALU_OP = 19;
-			else ALU_OP = 21;
+			else
+				ALU_OP = 21;
 		}
 	}
 
@@ -327,9 +305,7 @@ void decode()
 		addressB >>= 27;
 
 		addressA = IR << 12;
-		cout<<addressA<<' ';
 		addressA >>= 27;
-		cout << addressA << ' ';
 		if (funct3 == 0)
 			MEM_WRITE = 1;
 		else if (funct3 == 1)
@@ -346,7 +322,7 @@ void decode()
 
 	else if (opcode == OPCODE_U1) //auipc
 	{
-		immediate = IR >> 11;
+		immediate = IR >> 12;
 
 		addressC = IR << 20;
 		addressC >>= 27;
@@ -356,11 +332,12 @@ void decode()
 		MEM_WRITE = 0;
 		RF_WRITE = 1;
 		ALU_OP = 12;
+		cout<<immediate<<' '<<PC<<endl;
 	}
 
-	else if (opcode == OPCODE_U2)  //lui
+	else if (opcode == OPCODE_U2) //lui
 	{
-		immediate = IR >> 11;
+		immediate = IR >> 12;
 
 		addressC = IR << 20;
 		addressC >>= 27;
@@ -382,50 +359,49 @@ void decode()
 		rd >>= 27;
 		RF_WRITE = 1;
 		B_SELECT = 0;
-		cout<<rs2<<endl;
-		if (funct3 == 0)           
+		if (funct3 == 0)
 		{
-			if(funct7==0)
-				ALU_OP = 0;       //add,addw
+			if (funct7 == 0)
+				ALU_OP = 0; //add,addw
 			else
-				ALU_OP = 18;	  //sub,subw
-
+				ALU_OP = 18; //sub,subw
 		}
 
-		else if (funct3 == 1)	  //sll,sllw
+		else if (funct3 == 1) //sll,sllw
 		{
-			
+
 			ALU_OP = 7;
 		}
 
-		else if (funct3 == 2)		//slt
+		else if (funct3 == 2) //slt
 		{
 			ALU_OP = 20;
 		}
 
-		else if (funct3 == 3)		//sltu
+		else if (funct3 == 3) //sltu
 		{
 			ALU_OP = 20;
 		}
 
-		else if (funct3 == 4)		//xor	
+		else if (funct3 == 4) //xor
 		{
 			ALU_OP = 8;
 		}
 
-		else if (funct3 == 5)		
+		else if (funct3 == 5)
 		{
-			if(funct7==0)
-				ALU_OP=19;	//srl,srlw
-			else ALU_OP=21;	//sra,sraw
+			if (funct7 == 0)
+				ALU_OP = 19; //srl,srlw
+			else
+				ALU_OP = 21; //sra,sraw
 		}
 
-		else if (funct3 == 6)	//or
+		else if (funct3 == 6) //or
 		{
 			ALU_OP = 6;
 		}
 
-		else if (funct3 == 7)	//and
+		else if (funct3 == 7) //and
 		{
 			ALU_OP = 1;
 		}
@@ -442,9 +418,9 @@ void decode()
 		rd >>= 27;
 		addressC = rd;
 		int tmp1 = IR >> 12;
-		int bit_20 = tmp1 && (1 << 19);
-		int bit_1_10 = (tmp1 >> 9) && (1 << 11 - 1);
-		int bit_11 = (tmp1 && (1 << 8)) << 2;
+		int bit_20 = tmp1 & (1 << 19);
+		int bit_1_10 = (tmp1 >> 9) & ((1 << 11) - 1);
+		int bit_11 = (tmp1 & (1 << 8)) << 2;
 		int bit_19_12 = (tmp1 << 12) >> 1;
 		immediate = bit_1_10 | bit_11 | bit_19_12 | bit_20;
 		RF_WRITE = 1;
@@ -473,13 +449,13 @@ void decode()
 		int immediate = bit_1_4 | bit_5_10 | bit_11 | bit_12;
 		RF_WRITE = 0;
 		B_SELECT = 0;
-		if (funct3 == 5 || funct3 == 7)	//bge,bgeu
+		if (funct3 == 5 || funct3 == 7) //bge,bgeu
 			ALU_OP = 3;
-		else if (funct3 == 4 || funct3 == 6)	//blt,bltu
+		else if (funct3 == 4 || funct3 == 6) //blt,bltu
 			ALU_OP = 4;
-		else if (funct3 == 0)		//beq
+		else if (funct3 == 0) //beq
 			ALU_OP = 2;
-		else if (funct3 == 1)		//bne
+		else if (funct3 == 1) //bne
 			ALU_OP = 5;
 		addressA = rs1;
 		addressB = rs2;
@@ -509,7 +485,7 @@ int alu(int ALU_OP, int B_SELECT, int immediate = 0)
 		InB = RB;
 	else
 		InB = immediate;
-		//cout<<RA<<" "<<RB<<endl;
+	//cout<<RA<<" "<<RB<<endl;
 
 	if (ALU_OP == 0) //addi,load,
 		RZ = InA + InB;
@@ -534,31 +510,31 @@ int alu(int ALU_OP, int B_SELECT, int immediate = 0)
 
 	//incomplete from here:
 	else if (ALU_OP == 7) //slli
-		RZ = InA<<InB;
+		RZ = InA << InB;
 
-	else if (ALU_OP == 18) 
+	else if (ALU_OP == 18)
 		RZ = InA - InB;
 
 	else if (ALU_OP == 8) //xori
 		RZ = InA ^ InB;
 
-	else if(ALU_OP == 12)  //auipc
-		RZ = PC + InB<<12;
+	else if (ALU_OP == 12) //auipc
+		RZ = PC + (InB << 12);
 
-	else if(ALU_OP == 13)
-		RZ = InB<<12;
+	else if (ALU_OP == 13)
+		RZ = InB << 12;
 
-	else if(ALU_OP==19)	//srli
-		RZ = InA>>InB;
+	else if (ALU_OP == 19) //srli
+		RZ = InA >> InB;
 
-	else if (ALU_OP == 20)	//slti,sltiu
-		RZ = (InA<InB)?1:0;
+	else if (ALU_OP == 20) //slti,sltiu
+		RZ = (InA < InB) ? 1 : 0;
 
-	else if (ALU_OP==21)
-		{
-			RZ= InA>>InB;
-			RZ |= InA && (1<<31);
-		}	
+	else if (ALU_OP == 21)
+	{
+		RZ = InA >> InB;
+		RZ |= InA && (1 << 31);
+	}
 
 	// for jalr ALU_OP = 10
 	// for sd, sw, sh, sb ALU_OP = 11
@@ -567,13 +543,13 @@ int alu(int ALU_OP, int B_SELECT, int immediate = 0)
 }
 //end of ALU function
 
-/*Stage 4: Memory & RY get updated
+	/*Stage 4: Memory & RY get updated
 Input: Y_SELECT, MEM_READ, MEM_WRITE, address from RZ/RM, data*/
-void memoryStage(int Y_SELECT, int MEM_READ, int MEM_WRITE, int address = 0, int data = 0)
+	void
+	memoryStage(int Y_SELECT, int MEM_READ, int MEM_WRITE, int address = 0, int data = 0)
 {
 	int dataFromMem = readWriteMemory(MEM_READ, MEM_WRITE, address, data);
-	if (Y_SELECT == 0)
-		RY = RZ;
+	if (Y_SELECT == 0) RY = RZ;
 	if (Y_SELECT == 1)
 		RY = dataFromMem;
 	if (Y_SELECT == 2)
@@ -667,14 +643,16 @@ void printRegisterFile()
 }
 //End of print RegisterFile
 void runCode()
-{   while(1)
-	{	if(memory[PC]==0 && memory[PC+1]==0 && PC[memory+2]==0 && PC[memory+3]==0)
+{
+	while (1)
+	{
+		if (memory[PC] == 0 && memory[PC + 1] == 0 && PC[memory + 2] == 0 && PC[memory + 3] == 0)
 			break;
 		fetch();
 		decode();
-		returnAddress=alu(ALU_OP, B_SELECT, immediate);
+		returnAddress = alu(ALU_OP, B_SELECT, immediate);
 		memoryStage(Y_SELECT, MEM_READ, MEM_WRITE, RZ, RB);
-		writeBack(RF_WRITE,addressC);
+		writeBack(RF_WRITE, addressC);
 	}
 }
 //main function
@@ -691,5 +669,3 @@ int main()
 	printMemory();
 	printRegisterFile();
 }
-
-
