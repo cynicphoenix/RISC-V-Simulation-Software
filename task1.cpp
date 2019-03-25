@@ -891,8 +891,8 @@ int main(){
 	fstream fileReading;
 	fstream fileWriting;
 	fstream fileWriting2;
-	fileReading.open("assemblyCode.asm");
-	fileWriting.open("machineCode.mc");
+	fileReading.open("assemblyCode.asm", ios::in);
+	fileWriting.open("machineCode.mc", ios::out);
 	fileWriting2.open("machineData.txt");
 	int datal=1048576;//0x100000
 	
@@ -910,6 +910,11 @@ int main(){
 				i++;
 			assemblyLine = assemblyLine.substr(i,assemblyLine.size()-i);
 		}
+
+		if(assemblyLine.size() == 0){
+			continue;
+		}
+		cout<<assemblyLine<<endl;
 		i=0;
 		string var="";
 		string size="";
@@ -933,7 +938,7 @@ int main(){
 				i++;
 			}
 			i++;
-			while(i<assemblyLine.size() && assemblyLine[i]=='0'||assemblyLine[i]=='1'||assemblyLine[i]=='2'||assemblyLine[i]=='3'||assemblyLine[i]=='4'||assemblyLine[i]=='5'||assemblyLine[i]=='6'||assemblyLine[i]=='7'||assemblyLine[i]=='8'||assemblyLine[i]=='9'){
+			while(i<assemblyLine.size() && (assemblyLine[i]=='0'||assemblyLine[i]=='1'||assemblyLine[i]=='2'||assemblyLine[i]=='3'||assemblyLine[i]=='4'||assemblyLine[i]=='5'||assemblyLine[i]=='6'||assemblyLine[i]=='7'||assemblyLine[i]=='8'||assemblyLine[i]=='9')) {
 				value+=assemblyLine[i];
 				i++;
 			}

@@ -22,21 +22,10 @@ using namespace std;
 
 #define OPCODE_UJ 111 //for jal
 
-#define f3_0 0
-#define f3_1 1
-#define f3_2 2
-#define f3_3 3
-#define f3_4 4
-#define f3_5 5
-#define f3_6 6
-#define f3_7 7
 
-#define f7_0 0
-#define f7_1 32
-
-unsigned char memory[1 << 22]; //Processor Memory
+unsigned char memory[1 << 24]; //Processor Memory
 int regArray[32] = {0};
-unsigned int PC = 0;				//Program Counter
+unsigned int PC = 0;		//Program Counter
 int IR;					//Instruction Register
 int RA, RB, RZ, RY, RM; //Interstage Buffers
 unsigned int addressA, addressB;
@@ -54,6 +43,9 @@ void readWriteRegFile(int RF_WRITE, int addressA, int addressB, int addressC)
 	if (RF_WRITE == 1)
 	{
 		if(addressC) regArray[addressC] = RY;
+		if(addressC == 2){
+			cout<<immediate<<' '<<RA<<endl;
+		}
 		return;
 	}
 
@@ -90,7 +82,7 @@ int readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, int data_w = 0
 	}
 	else if (MEM_WRITE == 2)
 	{ //sh
-		memory[address] = data_w && ((1 << 8) - 1);
+		memory[address] = data_w & ((1 << 8) - 1);
 		memory[address + 1] = data_w >> 8;
 	}
 	else if (MEM_WRITE == 3)
@@ -441,7 +433,7 @@ void decode()
 		unsigned int bit_11 = (rd & 1) << 10;
 		unsigned int bit_1_4 = rd >> 1;
 		unsigned int bit_12 = (funct7 >> 6) << 11;
-		unsigned int bit_5_10 = (funct7 - bit_12 << 6) << 4;
+		unsigned int bit_5_10 = (funct7 - (bit_12 << 6)) << 4;
 		immediate = bit_1_4 | bit_5_10 | bit_11 | bit_12;
 		immediate <<= 1;
 		RF_WRITE = 0;
@@ -474,7 +466,7 @@ Update RZ
 Output: only for branch instruction
 branch taken:1
 branch not taken:0 */
-int alu(int ALU_OP, int B_SELECT, int immediate = 0)
+void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 {
 	int InA = RA;
 	int InB;
@@ -485,7 +477,9 @@ int alu(int ALU_OP, int B_SELECT, int immediate = 0)
 	//cout<<RA<<" "<<RB<<endl;
 
 	if (ALU_OP == 0) //addi,load,
+	{
 		RZ = InA + InB;
+	}	
 
 	else if (ALU_OP == 1) //andi
 		RZ = InA & InB;
@@ -557,11 +551,12 @@ int alu(int ALU_OP, int B_SELECT, int immediate = 0)
 	else if (ALU_OP == 21)
 	{
 		RZ = InA >> InB;
-		RZ |= InA && (1 << 31);
+		RZ |= InA & (1 << 31);
 	}
 	else if(ALU_OP==22)
 	{
 		RZ=InA+InB;
+		PC -= 4;
 		returnAddress=iag(0, PC_SELECT, immediate);
 	}
 	else if(ALU_OP==-1){
@@ -677,16 +672,17 @@ void runCode()
 			break;
 		fetch();
 		decode();
-		returnAddress = alu(ALU_OP, B_SELECT, immediate);
+		alu(ALU_OP, B_SELECT, immediate);
 		memoryStage(Y_SELECT, MEM_READ, MEM_WRITE, RZ, RB);
 		writeBack(RF_WRITE, addressC);
+		// printRegisterFile();
 	}
 }
 //main function
 int main()
 {
 	//initialize x2, x3
-	regArray[2] = 0x7FFFFC;
+	regArray[2] = 0xFFFFFF;
 	regArray[3] = 0x100000;
 
 	//printRegisterFile();
