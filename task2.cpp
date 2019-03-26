@@ -1,4 +1,3 @@
-
 // Task 2: Data Path & Control Circuitry
 
 #include <bits/stdc++.h>
@@ -22,16 +21,17 @@ using namespace std;
 
 #define OPCODE_UJ 111 //for jal
 
-
 unsigned char memory[1 << 24]; //Processor Memory
 int regArray[32] = {0};
-unsigned int PC = 0;		//Program Counter
+unsigned int PC = 0;	//Program Counter
 int IR;					//Instruction Register
 int RA, RB, RZ, RY, RM; //Interstage Buffers
 unsigned int addressA, addressB;
-int immediate;	 // for immediate values
-int addressC;	  //destination register
+int immediate;				// for immediate values
+int addressC;				//destination register
 unsigned int returnAddress; //Return Address in case of jal/jalr
+
+//Control Signals
 int ALU_OP, B_SELECT, PC_SELECT, INC_SELECT, Y_SELECT;
 int MEM_READ;
 int MEM_WRITE;
@@ -42,7 +42,8 @@ void readWriteRegFile(int RF_WRITE, int addressA, int addressB, int addressC)
 {
 	if (RF_WRITE == 1)
 	{
-		if(addressC) regArray[addressC] = RY;
+		if (addressC)
+			regArray[addressC] = RY;
 		return;
 	}
 
@@ -110,7 +111,7 @@ lli iag(int INC_SELECT, int PC_SELECT, lli immediate = 0)
 	}
 	return PC_Temp;
 }
-//End of function IAG
+//End of function iag
 
 //Stage 1: Fetch Stage
 void fetch()
@@ -120,10 +121,8 @@ void fetch()
 }
 //end of fetch
 
-/*
-Stage 2: Decode Stage
-RA & RB will be updated after this stage 
-*/
+/* Stage 2: Decode Stage
+RA & RB will be updated after this stage */
 void decode()
 {
 
@@ -149,7 +148,7 @@ void decode()
 		immediate = imm;
 		addressC = rd;
 		Y_SELECT = 1;
-		if (funct3 == 0) //Changes to accomodate load and store words and so on.
+		if (funct3 == 0)
 			MEM_READ = 1;
 		else if (funct3 == 1)
 			MEM_READ = 2;
@@ -308,7 +307,7 @@ void decode()
 	}
 
 	else if (opcode == OPCODE_U1) //auipc
-	{   //cout<<"AUIPCFOUND      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"<<endl;
+	{
 		immediate = IR >> 12;
 
 		addressC = IR << 20;
@@ -348,47 +347,53 @@ void decode()
 		{
 			if (funct7 == 0)
 				ALU_OP = 0; //add,addw
+			else if (funct7 == 1)
+				ALU_OP = 25; //mul
 			else
 				ALU_OP = 18; //sub,subw
 		}
 
-		else if (funct3 == 1) //sll,sllw
-		{
+		else if (funct3 == 1)
+			ALU_OP = 7; //sll,sllw
 
-			ALU_OP = 7;
-		}
+		else if (funct3 == 2)
+			ALU_OP = 20; //slt
 
-		else if (funct3 == 2) //slt
-		{
-			ALU_OP = 20;
-		}
+		else if (funct3 == 3)
+			ALU_OP = 20; //sltu
 
-		else if (funct3 == 3) //sltu
+		else if (funct3 == 4)
 		{
-			ALU_OP = 20;
-		}
-
-		else if (funct3 == 4) //xor
-		{
-			ALU_OP = 8;
+			if (funct7 == 1)
+				ALU_OP = 29; //div
+			else
+				ALU_OP = 8; //xor
 		}
 
 		else if (funct3 == 5)
 		{
 			if (funct7 == 0)
 				ALU_OP = 19; //srl,srlw
+			else if (funct7 == 1)
+				ALU_OP = 30; // divu
 			else
 				ALU_OP = 21; //sra,sraw
 		}
 
-		else if (funct3 == 6) //or
+		else if (funct3 == 6)
 		{
-			ALU_OP = 6;
+			if (funct7 == 1)
+				ALU_OP = 31; //rem
+			else
+				ALU_OP = 6; //or
 		}
 
-		else if (funct3 == 7) //and
+		else if (funct3 == 7)
 		{
-			ALU_OP = 1;
+			if (funct7 == 1)
+				ALU_OP = 32; //remu
+			else
+				ALU_OP = 1; //and
 		}
 		addressA = rs1;
 		addressB = rs2;
@@ -396,20 +401,22 @@ void decode()
 		MEM_READ = 0;
 		MEM_WRITE = 0;
 	}
-	
+
 	else if (opcode == OPCODE_UJ)
-	{ 
+	{
 		unsigned int rd = IR << 20;
 		rd >>= 27;
 		addressC = rd;
 		bitset<20> tmp2(IR >> 12), res;
-		for(int i=18; i>=11; --i) res[i] = tmp2[i-11];
+		for (int i = 18; i >= 11; --i)
+			res[i] = tmp2[i - 11];
 		res[10] = tmp2[8];
-		for(int i=9; i>=0; --i) res[i] = tmp2[i+9];
+		for (int i = 9; i >= 0; --i)
+			res[i] = tmp2[i + 9];
 		int tmp1 = res.to_ulong();
-		if(tmp2[19]) tmp1=tmp1-(1<<19);
-		immediate = tmp1*2;
-		cout << "i" << immediate << endl;
+		if (tmp2[19])
+			tmp1 = tmp1 - (1 << 19);
+		immediate = tmp1 * 2;
 		RF_WRITE = 1;
 		B_SELECT = 0;
 		INC_SELECT = 1;
@@ -435,7 +442,6 @@ void decode()
 		int bit_5_10 = (funct7 - (bit_12 << 6)) << 4;
 		immediate = bit_1_4 | bit_5_10 | bit_11 | bit_12;
 		immediate <<= 1;
-		cout << "i" << immediate << endl;
 
 		RF_WRITE = 0;
 		B_SELECT = 0;
@@ -453,20 +459,14 @@ void decode()
 		MEM_READ = 0;
 		MEM_WRITE = 0;
 	}
-	//cout<<addressA<<" "<<addressB<<" "<<RA<<" "<<RB<<endl;
 	readWriteRegFile(0, addressA, addressB, addressC);
-	//cout << addressA << " " << addressB << " " << RA << " " << RB << endl;
 }
 //End of decode
 
 /* Arithmetic Logic Unit
 Input: ALU_OP, MUXB select, immediate(if any)
 (these input will be provided by decode stage)
-Result:
-Update RZ
-Output: only for branch instruction
-branch taken:1
-branch not taken:0 */
+Updates RZ */
 void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 {
 	int InA = RA;
@@ -475,19 +475,19 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 		InB = RB;
 	else
 		InB = immediate;
-	//cout<<RA<<" "<<RB<<endl;
 
 	if (ALU_OP == 0) //addi,load,
 	{
 		RZ = InA + InB;
-	}	
+	}
 
 	else if (ALU_OP == 1) //andi
 		RZ = InA & InB;
 
 	else if (ALU_OP == 2) //beq
 	{
-		if(InA == InB){
+		if (InA == InB)
+		{
 			INC_SELECT = 1;
 			PC -= 4;
 			iag(INC_SELECT, 1, immediate);
@@ -526,21 +526,20 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 	else if (ALU_OP == 6) //ori
 		RZ = InA | InB;
 
-	//incomplete from here:
 	else if (ALU_OP == 7) //slli
 		RZ = InA << InB;
 
-	else if (ALU_OP == 18)
+	else if (ALU_OP == 18) //sub
 		RZ = InA - InB;
 
 	else if (ALU_OP == 8) //xori
 		RZ = InA ^ InB;
 
 	else if (ALU_OP == 12) //auipc
-		{	//cout<<PC<<" AUIPC"<<endl;
-			RZ = PC - 4 + (InB << 12);
-		}
-	else if (ALU_OP == 13)
+	{
+		RZ = PC - 4 + (InB << 12);
+	}
+	else if (ALU_OP == 13) //lui
 		RZ = InB << 12;
 
 	else if (ALU_OP == 19) //srli
@@ -549,30 +548,41 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 	else if (ALU_OP == 20) //slti,sltiu
 		RZ = (InA < InB) ? 1 : 0;
 
-	else if (ALU_OP == 21)
+	else if (ALU_OP == 21) //sra, sraw
 	{
 		RZ = InA >> InB;
 		RZ |= InA & (1 << 31);
 	}
-	else if(ALU_OP==22)
+	else if (ALU_OP == 22) //jalr
 	{
-		RZ=InA+InB;
+		RZ = InA + InB;
 		PC -= 4;
-		returnAddress=iag(0, PC_SELECT, immediate);
+		returnAddress = iag(0, PC_SELECT, immediate);
 	}
-	else if(ALU_OP==-1){
+	else if (ALU_OP == 25) //mul
+		RZ = RA * RB;
+
+	else if (ALU_OP == 29 || ALU_OP == 30) //div, divu
+		RZ = RA / RB;
+
+	else if (ALU_OP == 31 || ALU_OP == 32) // rem, remu
+		RZ = RA % RB;
+
+	else if (ALU_OP == -1)
+	{ // jal
 		PC -= 4;
-		returnAddress=iag(INC_SELECT, 1, immediate);
+		returnAddress = iag(INC_SELECT, 1, immediate);
 	}
 }
 //end of ALU function
 
 /*Stage 4: Memory & RY get updated
-Input: Y_SELECT, MEM_READ, MEM_WRITE, address from RZ/RM, data*/
+Input: Y_SELECT, MEM_READ, MEM_WRITE, address from RZ/RM, data */
 void memoryStage(int Y_SELECT, int MEM_READ, int MEM_WRITE, int address = 0, int data = 0)
 {
 	int dataFromMem = readWriteMemory(MEM_READ, MEM_WRITE, address, data);
-	if (Y_SELECT == 0) RY = RZ;
+	if (Y_SELECT == 0)
+		RY = RZ;
 	if (Y_SELECT == 1)
 		RY = dataFromMem;
 	if (Y_SELECT == 2)
@@ -648,11 +658,11 @@ void updateMemory()
 //Prints memory that has been alloted with data or instruction!
 void printMemory()
 {
-	cout << "Showing Memory..." << endl;
+	cout << "----------------Memory--------------------" << endl;
 	for (int i = 0; i < 1 << 22; i++)
 		if (memory[i] != '\0')
 			cout << i << "\t" << (int)memory[i] << endl;
-	cout << "Memory File end here!" << endl;
+	cout << "-------------------------------------------" << endl;
 }
 //End of printMemory
 
@@ -665,23 +675,23 @@ void printRegisterFile()
 	cout << "-------------------------------------------" << endl;
 }
 //End of print RegisterFile
+
+//Run Instructions: unpipelined
 void runCode()
 {
 	while (1)
 	{
 		if (memory[PC] == 0 && memory[PC + 1] == 0 && memory[PC + 2] == 0 && memory[PC + 3] == 0)
 			break;
-		cout << (int)memory[PC] << " " << (int)memory[PC + 1] << " " << (int) memory[PC + 2] << " " <<(int)  memory[PC + 3] << endl;
-		cout<<hex<<PC<<" ";
 		fetch();
-		cout  << IR << dec << endl;
 		decode();
 		alu(ALU_OP, B_SELECT, immediate);
 		memoryStage(Y_SELECT, MEM_READ, MEM_WRITE, RZ, RB);
 		writeBack(RF_WRITE, addressC);
-		if(Y_SELECT == 2) printRegisterFile();
 	}
 }
+//End of runCode
+
 //main function
 int main()
 {
@@ -689,11 +699,8 @@ int main()
 	regArray[2] = 0xFFFFFF;
 	regArray[3] = 0x100000;
 
-	//printRegisterFile();
 	updateMemory(); //Update memory with data & instructions
-	printMemory();
 	runCode();
-	//printMemory();jalr x0, 0(x1)
-
-	// printRegisterFile();
+	printRegisterFile();
 }
+//End of main
