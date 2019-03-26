@@ -16,6 +16,6 @@ addi x6, x10, 0
 lw x10, 0(x2)
 lw x1, 4(x2)
 addi x2, x2, 8
-add x10, x10, x6
+mul x10, x10, x6
 jalr x0, 0(x1)
 EXIT:
