@@ -44,7 +44,7 @@ void readWriteRegFile(int RF_WRITE, int addressA, int addressB, int addressC)
 	{
 		if(addressC) regArray[addressC] = RY;
 		if(addressC == 2){
-			cout<<immediate<<' '<<RA<<endl;
+			// cout<<immediate<<' '<<RA<<endl;
 		}
 		return;
 	}
@@ -129,6 +129,7 @@ RA & RB will be updated after this stage
 */
 void decode()
 {
+
 	unsigned int opcode = IR << 25;
 	opcode >>= 25;
 	unsigned int funct3 = IR << 17;
@@ -400,17 +401,18 @@ void decode()
 	}
 	
 	else if (opcode == OPCODE_UJ)
-	{
+	{ 
 		unsigned int rd = IR << 20;
 		rd >>= 27;
 		addressC = rd;
-		unsigned int tmp1 = IR >> 12;
-		unsigned int bit_20 = tmp1 & (1 << 19);
-		unsigned int bit_1_10 = (tmp1 >> 9) & ((1 << 10) - 1);
-		unsigned int bit_11 = (tmp1 & (1 << 8)) << 2;
-		unsigned int bit_19_12 = (tmp1 << 24) >> 12;
-		immediate = bit_1_10 | bit_11 | bit_19_12 | bit_20;
-		immediate <<= 1;
+		bitset<20> tmp2(IR >> 12), res;
+		for(int i=18; i>=11; --i) res[i] = tmp2[i-11];
+		res[10] = tmp2[8];
+		for(int i=9; i>=0; --i) res[i] = tmp2[i+9];
+		int tmp1 = res.to_ulong();
+		if(tmp2[19]) tmp1=-tmp1;
+		immediate = tmp1*2;
+		cout<<"i"<<immediate<<endl;
 		RF_WRITE = 1;
 		B_SELECT = 0;
 		INC_SELECT = 1;
@@ -430,12 +432,14 @@ void decode()
 		rs2 >>= 27;
 		unsigned int rd = IR << 20;
 		rd >>= 27;
-		unsigned int bit_11 = (rd & 1) << 10;
-		unsigned int bit_1_4 = rd >> 1;
-		unsigned int bit_12 = (funct7 >> 6) << 11;
-		unsigned int bit_5_10 = (funct7 - (bit_12 << 6)) << 4;
+		int bit_11 = (rd & 1) << 10;
+		int bit_1_4 = rd >> 1;
+		int bit_12 = (funct7 >> 6) << 11;
+		int bit_5_10 = (funct7 - (bit_12 << 6)) << 4;
 		immediate = bit_1_4 | bit_5_10 | bit_11 | bit_12;
 		immediate <<= 1;
+		cout << "i" << immediate << endl;
+
 		RF_WRITE = 0;
 		B_SELECT = 0;
 		if (funct3 == 5 || funct3 == 7) //bge,bgeu
@@ -488,7 +492,7 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 	{
 		if(InA == InB){
 			INC_SELECT = 1;
-			PC-=4;
+			PC -= 4;
 			iag(INC_SELECT, 1, immediate);
 		}
 	}
@@ -560,7 +564,7 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 		returnAddress=iag(0, PC_SELECT, immediate);
 	}
 	else if(ALU_OP==-1){
-		PC-=4;
+		PC -= 4;
 		returnAddress=iag(INC_SELECT, 1, immediate);
 	}
 }
@@ -670,12 +674,15 @@ void runCode()
 	{
 		if (memory[PC] == 0 && memory[PC + 1] == 0 && memory[PC + 2] == 0 && memory[PC + 3] == 0)
 			break;
+		cout << (int)memory[PC] << " " << (int)memory[PC + 1] << " " << (int) memory[PC + 2] << " " <<(int)  memory[PC + 3] << endl;
+		cout<<hex<<PC<<" ";
 		fetch();
+		cout  << IR << dec << endl;
 		decode();
 		alu(ALU_OP, B_SELECT, immediate);
 		memoryStage(Y_SELECT, MEM_READ, MEM_WRITE, RZ, RB);
 		writeBack(RF_WRITE, addressC);
-		// printRegisterFile();
+		printRegisterFile();
 	}
 }
 //main function
@@ -687,9 +694,9 @@ int main()
 
 	//printRegisterFile();
 	updateMemory(); //Update memory with data & instructions
-	//printMemory();
+	printMemory();
 	runCode();
 	//printMemory();jalr x0, 0(x1)
 
-	printRegisterFile();
+	// printRegisterFile();
 }
