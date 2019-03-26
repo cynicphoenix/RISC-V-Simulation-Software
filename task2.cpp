@@ -43,9 +43,6 @@ void readWriteRegFile(int RF_WRITE, int addressA, int addressB, int addressC)
 	if (RF_WRITE == 1)
 	{
 		if(addressC) regArray[addressC] = RY;
-		if(addressC == 2){
-			// cout<<immediate<<' '<<RA<<endl;
-		}
 		return;
 	}
 
@@ -410,9 +407,9 @@ void decode()
 		res[10] = tmp2[8];
 		for(int i=9; i>=0; --i) res[i] = tmp2[i+9];
 		int tmp1 = res.to_ulong();
-		if(tmp2[19]) tmp1=-tmp1;
+		if(tmp2[19]) tmp1=tmp1-(1<<19);
 		immediate = tmp1*2;
-		cout<<"i"<<immediate<<endl;
+		cout << "i" << immediate << endl;
 		RF_WRITE = 1;
 		B_SELECT = 0;
 		INC_SELECT = 1;
@@ -682,7 +679,7 @@ void runCode()
 		alu(ALU_OP, B_SELECT, immediate);
 		memoryStage(Y_SELECT, MEM_READ, MEM_WRITE, RZ, RB);
 		writeBack(RF_WRITE, addressC);
-		printRegisterFile();
+		if(Y_SELECT == 2) printRegisterFile();
 	}
 }
 //main function
