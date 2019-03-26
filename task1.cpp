@@ -637,15 +637,6 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 	
 	if(instruction=="mul")
 		opcode="0110011", funct3="000", funct7="0000001", type ="R";
-		
-	if(instruction=="mulh")
-		opcode="0110011", funct3="001", funct7="0000001", type ="R";
-		
-	if(instruction=="mulhsu")
-		opcode="0110011", funct3="010", funct7="0000001", type ="R";
-		
-	if(instruction=="mulhu")
-		opcode="0110011", funct3="011", funct7="0000001", type ="R";
 	
 	if(instruction=="div")
 		opcode="0110011", funct3="100", funct7="0000001", type ="R";
@@ -882,9 +873,9 @@ void assignLineNumberToLabel(vector<labelData> &labelArray){
 	fileReading.close();
 }
 //End of assignLineNumberToLabel
-void removeComments(){
+void removeComments(string str){
 	fstream fileReading;
-	fileReading.open("assemblyCode.asm",ios::in);
+	fileReading.open(str,ios::in);
 	fstream fileWriting;
 	fileWriting.open("assemblyCode1.asm",ios::out);
 	string line="";
@@ -913,10 +904,12 @@ int main(){
 	string binaryInstructionAddress;
 	string assemblyLine;
 	string machineLine="";
-	
+	string input;
 	vector<data> varArray;
 	vector<labelData> labelArray;
-	removeComments();
+	cout<<"Enter the input file name"<<endl;
+	cin>>input;
+	removeComments(input);
 	assignLineNumberToLabel(labelArray);
 	
 	int datasegment=0;//to check if .data is there or not
