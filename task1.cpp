@@ -605,7 +605,6 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 			type="LABELI";
 		}
 	}
-	
 	if(instruction=="add")
 		opcode="0110011", funct3="000", funct7="0000000", type="R";
 
@@ -825,8 +824,8 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 	}
 	else if(type=="LABEL")
 		return "labelDetected";
-	else{
-		cout<<"Unsupported Instruction"<<endl;
+	else {
+		cout<<"Unsupported Instruction="<<instruction<<endl;
 	}
 	if(machineCodeInstructionBinary!="")
 		machineCodeInstructionHex="0x"+bin2Hex(machineCodeInstructionBinary);
@@ -839,7 +838,7 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 /*Keep track of labels in a vector
 labelArray stores label & their line number */
 void assignLineNumberToLabel(vector<labelData> &labelArray){
-	lli lineNumber=0, flag=0;
+	lli lineNumber=0, flag=0, flag1=0;
 	labelData tempLabel;
 	string line="";
 
@@ -849,13 +848,25 @@ void assignLineNumberToLabel(vector<labelData> &labelArray){
 		flag=0;
 		int i=0;
 		string label="";
-	
-		while(line[i]!=' '){
+		if(line.size()==0 )
+			continue;
+		while(line[i]==' ')
+			i++;
+		while(i<line.size()){
 			if(line[i]==':'){
 				flag=1;
 				break;
 			}
 			label+=line[i++];
+		}
+		if(flag==1){
+			if(i<line.size()){
+				i++;
+			while(line[i]==' ')
+				i++;
+			if(i<=line.size()-2)
+				flag1=1;
+			}
 		}
 		
 		if(flag==1){
@@ -863,12 +874,38 @@ void assignLineNumberToLabel(vector<labelData> &labelArray){
 			tempLabel.lineNumber=lineNumber;
 			labelArray.push_back(tempLabel);
 		}
+		if(flag==1 && flag1==0)
+			continue;
+
 		lineNumber++;
 	}
 	fileReading.close();
 }
 //End of assignLineNumberToLabel
-
+void removeComments(){
+	fstream fileReading;
+	fileReading.open("assemblyCode.asm",ios::in);
+	fstream fileWriting;
+	fileWriting.open("assemblyCode1.asm",ios::out);
+	string line="";
+	string nline="";
+	int i=0;
+	while(getline(fileReading,line)){
+		i=0;
+		nline="";
+		cout<<"line = "<<line<<endl;
+		if(line[i]=='#')
+			nline="";
+		else{
+			while(i<line.size()){
+				if(line[i]=='#')
+					break;
+				nline+=line[i++];
+			}
+		}
+		fileWriting<<nline<<endl;
+	}
+}
 //Main File : File Read & Write
 int main(){
 	lli instructionAddress=0, currentLineNumber=0;
@@ -882,6 +919,7 @@ int main(){
 	vector<labelData> labelArray;
 	
 	assignLineNumberToLabel(labelArray);
+	removeComments();
 	
 	int datasegment=0;//to check if .data is there or not
 	int textsegment=0;
@@ -891,7 +929,7 @@ int main(){
 	fstream fileReading;
 	fstream fileWriting;
 	fstream fileWriting2;
-	fileReading.open("assemblyCode.asm", ios::in);
+	fileReading.open("assemblyCode1.asm", ios::in);
 	fileWriting.open("machineCode.mc", ios::out);
 	fileWriting2.open("machineData.txt");
 	int datal=1048576;//0x100000
