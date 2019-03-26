@@ -825,7 +825,7 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 	else if(type=="LABEL")
 		return "labelDetected";
 	else {
-		cout<<"Unsupported Instruction="<<instruction<<endl;
+		cout<<"Unsupported Instruction"<<endl;
 	}
 	if(machineCodeInstructionBinary!="")
 		machineCodeInstructionHex="0x"+bin2Hex(machineCodeInstructionBinary);
@@ -843,7 +843,7 @@ void assignLineNumberToLabel(vector<labelData> &labelArray){
 	string line="";
 
 	fstream fileReading;
-	fileReading.open("assemblyCode.asm");
+	fileReading.open("assemblyCode1.asm");
 	while(getline(fileReading,line)){
 		flag=0;
 		int i=0;
@@ -893,7 +893,6 @@ void removeComments(){
 	while(getline(fileReading,line)){
 		i=0;
 		nline="";
-		cout<<"line = "<<line<<endl;
 		if(line[i]=='#')
 			nline="";
 		else{
@@ -917,9 +916,8 @@ int main(){
 	
 	vector<data> varArray;
 	vector<labelData> labelArray;
-	
-	assignLineNumberToLabel(labelArray);
 	removeComments();
+	assignLineNumberToLabel(labelArray);
 	
 	int datasegment=0;//to check if .data is there or not
 	int textsegment=0;
@@ -952,7 +950,6 @@ int main(){
 		if(assemblyLine.size() == 0){
 			continue;
 		}
-		cout<<assemblyLine<<endl;
 		i=0;
 		string var="";
 		string size="";
