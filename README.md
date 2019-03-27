@@ -56,7 +56,5 @@ ebreak, ecall, fence, fence.i
 -----------------------------------------------------------
 
 Limitations :
-
-In .data, we cannot initialize array
 Immediate Values can only be in integer (no hex support)
 
