@@ -591,18 +591,23 @@ string asm2mc(string line, lli currentLineNumber, vector<labelData> &labelArray)
 	int ISubType = 0;//subtypes for I-type instructions 0 for addi etc, 1 for instruction with offset, 2 for shift instructions
 
 	int i=0;
-	while(i<line.size()&&line[i]!=' ')
-		instruction+=line[i++];
+	while(i<line.size()&&line[i]!=' '){
+		if(line[i]==':'){
+			instruction+=line[i];
+			break;
+		}
+		instruction+=line[i];
+		i++;
+	}
 	if(instruction[instruction.size()-1]==':'){
 		type="LABEL";
-		if(line[i]==' '){
-			i++;
+		if(i<=line.size()-2){
 			instruction="";
-			while(line[i]!=' '){
-				instruction += line[i];
+			i++;
+			while(line[i]==' ')
 				i++;
-			}
-			type="LABELI";
+			while(line[i]!=' ')
+				instruction+=line[i++];
 		}
 	}
 	if(instruction=="add")
