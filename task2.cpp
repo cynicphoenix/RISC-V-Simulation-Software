@@ -446,10 +446,17 @@ void decode()
 
 		RF_WRITE = 0;
 		B_SELECT = 0;
-		if (funct3 == 5 || funct3 == 7) //bge,bgeu
+		if (funct3 == 5) //bge
 			ALU_OP = 3;
-		else if (funct3 == 4 || funct3 == 6) //blt,bltu
+		else if(funct3 == 7){	//bgeu
+			ALU_OP = 34;
+		}
+		else if (funct3 == 4) //blt
 			ALU_OP = 4;
+
+		else if(funct3 == 6){	//bltu
+		ALU_OP = 35;
+		}
 		else if (funct3 == 0) //beq
 			ALU_OP = 2;
 		else if (funct3 == 1) //bne Update task2.cpp
@@ -497,6 +504,26 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 	else if (ALU_OP == 3) //bge
 	{
 		if (InA >= InB)
+		{
+			INC_SELECT = 1;
+			PC -= 4;
+			iag(INC_SELECT, 1, immediate);
+		}
+	}
+
+	//bgeu
+	else if(ALU_OP == 34){
+		if((unsigned) InA >= (unsigned) InB)
+		{
+			INC_SELECT = 1;
+			PC -= 4;
+			iag(INC_SELECT, 1, immediate);
+		}
+	}
+
+	//bltu
+	else if(ALU_OP == 35){
+		if ((unsigned) InA < (unsigned) InB)
 		{
 			INC_SELECT = 1;
 			PC -= 4;
