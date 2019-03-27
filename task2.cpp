@@ -702,5 +702,12 @@ int main()
 	updateMemory(); //Update memory with data & instructions
 	runCode();
 	printRegisterFile();
+
+	cout<<"Do you want to print Memory?(yes/no)\n";
+	string answer;
+	cin>>answer;
+	if(answer == "yes"){
+		printMemory();
+	}
 }
 //End of main
