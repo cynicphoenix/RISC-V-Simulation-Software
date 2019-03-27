@@ -23,6 +23,7 @@ using namespace std;
 
 unsigned char memory[1 << 24]; //Processor Memory
 int regArray[32] = {0};
+int cycleCount = 0;
 unsigned int PC = 0;	//Program Counter
 int IR;					//Instruction Register
 int RA, RB, RZ, RY, RM; //Interstage Buffers
@@ -679,15 +680,81 @@ void printRegisterFile()
 //Run Instructions: unpipelined
 void runCode()
 {
-	while (1)
+	int choice;
+	cout << "-------------------------------------------" << endl;
+	cout << "Press 1 to run the whole pogram " << endl;
+	cout << "Press 2 to run it step by step" << endl;
+	cin >> choice;
+	cout << "-------------------------------------------" << endl;
+	switch (choice)
 	{
-		if (memory[PC] == 0 && memory[PC + 1] == 0 && memory[PC + 2] == 0 && memory[PC + 3] == 0)
+	case 1:
+	{
+		while (1)
+		{
+			if (memory[PC] == 0 && memory[PC + 1] == 0 && memory[PC + 2] == 0 && memory[PC + 3] == 0)
+				break;
+			fetch();
+			decode();
+			alu(ALU_OP, B_SELECT, immediate);
+			memoryStage(Y_SELECT, MEM_READ, MEM_WRITE, RZ, RB);
+			writeBack(RF_WRITE, addressC);
+			cycleCount++;
+		}
+		break;
+	}
+	case 2:
+	{
+		int printinfo = 0;
+		while (1)
+		{
+			cout << "Press 0 to move on" << endl;
+			cout << "Press 1 to print register file " << endl;
+			cout << "Press 2 to print memory" << endl;
+			cout << "Press 3 to execute to end" << endl;
+			cout << "-------------------------------------------" << endl;
+			cin >> printinfo;
+			if (printinfo == 1)
+			{
+				printRegisterFile();
+				continue;
+			}
+			else if (printinfo == 2)
+			{
+				printMemory();
+				continue;
+			}
+			else if (printinfo == 0)
+			{
+				if (memory[PC] == 0 && memory[PC + 1] == 0 && memory[PC + 2] == 0 && memory[PC + 3] == 0)
+					break;
+				fetch();
+				decode();
+				alu(ALU_OP, B_SELECT, immediate);
+				memoryStage(Y_SELECT, MEM_READ, MEM_WRITE, RZ, RB);
+				writeBack(RF_WRITE, addressC);
+				cycleCount++;
+			}
+			else if (printinfo == 3)
+			{
+				while (1)
+				{
+					if (memory[PC] == 0 && memory[PC + 1] == 0 && memory[PC + 2] == 0 && memory[PC + 3] == 0)
+						break;
+					fetch();
+					decode();
+					alu(ALU_OP, B_SELECT, immediate);
+					memoryStage(Y_SELECT, MEM_READ, MEM_WRITE, RZ, RB);
+					writeBack(RF_WRITE, addressC);
+					cycleCount++;
+				}
 			break;
-		fetch();
-		decode();
-		alu(ALU_OP, B_SELECT, immediate);
-		memoryStage(Y_SELECT, MEM_READ, MEM_WRITE, RZ, RB);
-		writeBack(RF_WRITE, addressC);
+			}
+		}
+		break;
+	}
+	default:
+		cout << "Wrong choice" << endl;
 	}
 }
 //End of runCode
@@ -702,12 +769,6 @@ int main()
 	updateMemory(); //Update memory with data & instructions
 	runCode();
 	printRegisterFile();
-
-	cout<<"Do you want to print Memory?(yes/no)\n";
-	string answer;
-	cin>>answer;
-	if(answer == "yes"){
-		printMemory();
-	}
+	cout << "Number of Cycles = " << cycleCount << endl;
 }
 //End of main
