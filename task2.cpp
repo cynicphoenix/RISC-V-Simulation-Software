@@ -283,8 +283,10 @@ void decode()
 	else if (opcode == OPCODE_S1) //store
 	{
 
-		int imm1 = IR << 20;
-		imm1 >>= 27;
+		int tmp = (1 << 5) - 1;
+		tmp <<= 7;
+		int imm1 = IR & tmp;
+		imm1 >>= 7;
 		int imm2 = IR >> 25;
 		immediate = imm1 + (imm2 << 5);
 
