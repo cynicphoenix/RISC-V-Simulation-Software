@@ -918,7 +918,6 @@ int main(){
 	cin>>input;
 	removeComments(input);
 	assignLineNumberToLabel(labelArray);
-	
 	int datasegment=0;//to check if .data is there or not
 	int textsegment=0;
 	long int* memory = new long int[1<<22];
@@ -973,22 +972,25 @@ int main(){
 				i++;
 			}
 			i++;
-			while(i<assemblyLine.size() && (assemblyLine[i]=='0'||assemblyLine[i]=='1'||assemblyLine[i]=='2'||assemblyLine[i]=='3'||assemblyLine[i]=='4'||assemblyLine[i]=='5'||assemblyLine[i]=='6'||assemblyLine[i]=='7'||assemblyLine[i]=='8'||assemblyLine[i]=='9')) {
-				value+=assemblyLine[i];
+			while(i<assemblyLine.size()){
+				value="";
+				while(assemblyLine[i]=='0'||assemblyLine[i]=='1'||assemblyLine[i]=='2'||assemblyLine[i]=='3'||assemblyLine[i]=='4'||assemblyLine[i]=='5'||assemblyLine[i]=='6'||assemblyLine[i]=='7'||assemblyLine[i]=='8'||assemblyLine[i]=='9'){
+					value+=assemblyLine[i++];
+				}
+				address = bitset<24>(datal).to_string();
+				address = bin2Hex(address);
+				machineLine = value+" 0x"+address+" "+size;
+				if(size=="byte")
+					datal++;
+				else if(size=="word")
+					datal+=4;
+				data obj;
+				obj.var=var;
+				obj.hexaddress="0x"+address;
+				varArray.push_back(obj);
 				i++;
+				fileWriting2<<machineLine<<endl;
 			}
-			address = bitset<24>(datal).to_string();
-			address = bin2Hex(address);
-			machineLine = value+" 0x"+address+" "+size;
-			if(size=="byte")
-				datal++;
-			else if(size=="word")
-				datal+=4;
-			data obj;
-			obj.var=var;
-			obj.hexaddress="0x"+address;
-			varArray.push_back(obj);
-			fileWriting2<<machineLine<<endl;
 		}
 		else if(assemblyLine!=".text" && assemblyLine!=".data"){
 			machineLine=asm2mc(assemblyLine, currentLineNumber, labelArray);
