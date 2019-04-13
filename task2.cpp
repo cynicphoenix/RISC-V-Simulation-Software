@@ -628,6 +628,7 @@ void writeBack(int RF_WRITE, int addressC)
 //End of writeBack
 
 //Update memory with data & instructions
+//Update memory with data & instructions
 void updateMemory()
 {
 	string machineLine;
@@ -667,23 +668,24 @@ void updateMemory()
 	fileReading.close();
 
 	fileReading.open("machineCode.mc");
+	lli address = 0;
 	while (getline(fileReading, machineLine))
 	{
-		lli value = 0, address = 0;
+		lli value = 0;
 
 		int i = 2; //initially : 0x
-		while (machineLine[i] != ' ')
-			address = address * 16 + hexadecimal[machineLine[i++]];
+				   //        while (machineLine[i] != ' ')
+				   //            address = address * 16 + hexadecimal[machineLine[i++]];
 
-		i += 3; //between : 0x
+		//        i += 3; //between : 0x
 		while (i < machineLine.length())
 			value = value * 16 + hexadecimal[machineLine[i++]];
 
 		readWriteMemory(0, 3, address, value);
+		address += 4;
 	}
 	fileReading.close();
 }
-//End of updateMemory
 
 //Prints memory that has been alloted with data or instruction!
 void printMemory()

@@ -70,22 +70,31 @@ Buffer_MEM_WB buffer_MEM_WB;
 
 #define OPCODE_UJ 111 //for jal
 
+#define FETCH_STAGE 1
+#define DECODE_STAGE 2
+#define EXECUTE_STAGE 3
+#define MEM_STAGE 4
+#define WB_STAGE 5
+
 unsigned char memory[1 << 24]; //Processor Memory
 int regArray[32] = {0};
 int cycleCount = 0;
 
 //Call in decode stage & Writeback Stage
-void readWriteRegFile()
+void readWriteRegFile(int stage)
 {
-    if (buffer_MEM_WB.RF_WRITE == 1)
-    {
-        if (buffer_MEM_WB.addressC)
-            regArray[buffer_MEM_WB.addressC] = buffer_MEM_WB.RY;
-        return;
+    if(stage == WB_STAGE){
+        if (buffer_MEM_WB.RF_WRITE == 1)
+        {
+            if (buffer_MEM_WB.addressC)
+                regArray[buffer_MEM_WB.addressC] = buffer_MEM_WB.RY;
+            return;
+        }
     }
-
-    buffer_ID_EX.RA = regArray[buffer_ID_EX.addressA];
-    buffer_ID_EX.RB = regArray[buffer_ID_EX.addressB];
+    if(stage == DECODE_STAGE){
+        buffer_ID_EX.RA = regArray[buffer_ID_EX.addressA];
+        buffer_ID_EX.RB = regArray[buffer_ID_EX.addressB];
+    }
 }
 //End of readWriteRegFile
 
@@ -134,12 +143,12 @@ int readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, int data_w = 0
 
 /*Instruction Address Generator
 returns returnAddress*/
-lli iag(int choice, int INC_SELECT = 0, int PC_SELECT = 0, lli immediate = 0){
-    if(choice == 1){        //call from fetch
+lli iag(int stage, int INC_SELECT = 0, int PC_SELECT = 0, lli immediate = 0){
+    if(stage == FETCH_STAGE){        //call from fetch
         return buffer_IF_ID.PC + 4;
     }
 
-    else{                   //call from alu
+    if(stage == EXECUTE_STAGE){                   //call from alu
         lli PC_Temp = buffer_ID_EX.PC + 4;
         if (PC_SELECT == 0)
             buffer_ID_EX.PC = buffer_EX_MEM.RZ;
@@ -160,7 +169,8 @@ lli iag(int choice, int INC_SELECT = 0, int PC_SELECT = 0, lli immediate = 0){
 void fetch()
 {
     buffer_IF_ID.IR = readWriteMemory(3, 0, buffer_IF_ID.PC);
-    buffer_IF_ID.PC = iag(1);
+    buffer_IF_ID.PC = iag(FETCH_STAGE);
+//    cout << hex << buffer_IF_ID.IR <<" "<<buffer_IF_ID.PC << dec << endl;
 }
 //end of fetch
 
@@ -522,7 +532,7 @@ void decode()
         MEM_READ = 0;
         MEM_WRITE = 0;
     }
-    
+  //  cout<<addressA<<' '<<addressB<<' '<<addressC<<' '<<immediate<<endl;
     buffer_ID_EX.PC = buffer_IF_ID.PC;
     buffer_ID_EX.addressC = addressC;
     buffer_ID_EX.immediate = immediate;
@@ -537,7 +547,7 @@ void decode()
     buffer_ID_EX.addressA = addressA;
     buffer_ID_EX.addressB = addressB;
     buffer_ID_EX.returnAddress = returnAddress;
-    readWriteRegFile();
+    readWriteRegFile(DECODE_STAGE);
 }
 //End of decode
 
@@ -548,14 +558,15 @@ Updates RZ */
 void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 {
     
-    int PC = buffer_ID_EX.PC;
     int INC_SELECT = buffer_ID_EX.INC_SELECT;
     int PC_SELECT = buffer_ID_EX.PC_SELECT;
     unsigned int returnAddress; //Return Address in case of jal/jalr
     immediate = buffer_ID_EX.immediate;
 
-    int RA = buffer_EX_MEM.RA = buffer_ID_EX.RA;
-    int RB = buffer_EX_MEM.RB = buffer_ID_EX.RB;
+    int RA =  buffer_ID_EX.RA;
+    buffer_EX_MEM.RA = buffer_ID_EX.RA;
+    int RB = buffer_ID_EX.RB;
+    buffer_EX_MEM.RB = buffer_ID_EX.RB;
     int RZ;
     buffer_EX_MEM.addressC = buffer_ID_EX.addressC;
     buffer_EX_MEM.immediate = buffer_ID_EX.immediate;
@@ -592,9 +603,9 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
         if (InA == InB)
         {
             INC_SELECT = 1;
-            PC -= 4;
+            buffer_ID_EX.PC -= 4;
             PC_SELECT = 1;
-            iag(2, INC_SELECT, PC_SELECT, immediate);
+            iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
         }
     }
     else if (ALU_OP == 3) //bge
@@ -602,9 +613,9 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
         if (InA >= InB)
         {
             INC_SELECT = 1;
-            PC -= 4;
+            buffer_ID_EX.PC -= 4;
             PC_SELECT = 1;
-            iag(2, INC_SELECT, PC_SELECT, immediate);
+            iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
         }
     }
 
@@ -614,9 +625,9 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
         if ((unsigned)InA >= (unsigned)InB)
         {
             INC_SELECT = 1;
-            PC -= 4;
+            buffer_ID_EX.PC -= 4;
             PC_SELECT = 1;
-            iag(2, INC_SELECT, PC_SELECT, immediate);
+            iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
         }
     }
 
@@ -626,21 +637,25 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
         if ((unsigned)InA < (unsigned)InB)
         {
             INC_SELECT = 1;
-            PC -= 4;
+            buffer_ID_EX.PC -= 4;
             PC_SELECT = 1;
-            iag(2, INC_SELECT, PC_SELECT, immediate);
+            iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
         }
     }
 
     else if (ALU_OP == 4) //blt
     {
+        cout << "blt: " << buffer_ID_EX.PC << endl;
+        cout<<InA<<" "<<InB<<endl;
         if (InA < InB)
         {
             INC_SELECT = 1;
-            PC -= 4;
+            buffer_ID_EX.PC -= 4;
             PC_SELECT = 1;
-            iag(2, INC_SELECT, PC_SELECT, immediate);
+            iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+            cout << "blt: " << buffer_ID_EX.PC << endl;
         }
+        
     }
 
     else if (ALU_OP == 5) //bne
@@ -648,9 +663,9 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
         if (InA != InB)
         {
             INC_SELECT = 1;
-            PC -= 4;
+            buffer_ID_EX.PC -= 4;
             PC_SELECT = 1;
-            iag(2, INC_SELECT, PC_SELECT, immediate);
+            iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
         }
     }
 
@@ -668,7 +683,7 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 
     else if (ALU_OP == 12) //auipc
     {
-        RZ = PC - 4 + (InB << 12);
+        RZ = buffer_ID_EX.PC - 4 + (InB << 12);
     }
     else if (ALU_OP == 13) //lui
         RZ = InB << 12;
@@ -686,10 +701,11 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
     }
     else if (ALU_OP == 22) //jalr
     {
-        RZ = InA + InB;
-        PC -= 4;
-        INC_SELECT = 0;
-        returnAddress = iag(2, INC_SELECT, PC_SELECT, immediate);
+//        cout<<InA<<' '<<InB<<' ';
+        buffer_EX_MEM.RZ = InA + InB;
+        RZ=InA+InB;
+        buffer_ID_EX.PC -= 4;
+        returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
     }
     else if (ALU_OP == 25) //mul
         RZ = RA * RB;
@@ -702,17 +718,17 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 
     else if (ALU_OP == -1)
     { // jal
-        PC -= 4;
+        buffer_ID_EX.PC -= 4;
         PC_SELECT = 1;
-        returnAddress = iag(2, INC_SELECT, PC_SELECT, immediate);
+        returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
     }
 
     buffer_EX_MEM.RZ = RZ;
     buffer_EX_MEM.returnAddress = returnAddress;
     buffer_EX_MEM.INC_SELECT = INC_SELECT;
     buffer_EX_MEM.PC_SELECT = PC_SELECT;
-    buffer_EX_MEM.PC = PC;
-
+    buffer_EX_MEM.PC = buffer_ID_EX.PC;
+    //cout<<hex<<buffer_EX_MEM.PC<<dec<<endl;
 }
 //end of ALU function
 
@@ -735,12 +751,14 @@ void memoryStage(int Y_SELECT, int MEM_READ, int MEM_WRITE, int address = 0, int
     buffer_MEM_WB.addressC = buffer_EX_MEM.addressC;
     buffer_MEM_WB.RF_WRITE = buffer_EX_MEM.RF_WRITE;
 }
+
 //End of memoryStage
 
 //Stage 5: WriteBack
 void writeBack(int RF_WRITE, int addressC)
 {
-    readWriteRegFile();
+    readWriteRegFile(WB_STAGE);
+    buffer_IF_ID.PC = buffer_EX_MEM.PC;
 }
 //End of writeBack
 
@@ -784,19 +802,21 @@ void updateMemory()
     fileReading.close();
 
     fileReading.open("machineCode.mc");
+    lli address = 0;
     while (getline(fileReading, machineLine))
     {
-        lli value = 0, address = 0;
+        lli value = 0;
 
         int i = 2; //initially : 0x
-        while (machineLine[i] != ' ')
-            address = address * 16 + hexadecimal[machineLine[i++]];
+//        while (machineLine[i] != ' ')
+//            address = address * 16 + hexadecimal[machineLine[i++]];
 
-        i += 3; //between : 0x
+//        i += 3; //between : 0x
         while (i < machineLine.length())
             value = value * 16 + hexadecimal[machineLine[i++]];
 
         readWriteMemory(0, 3, address, value);
+        address+=4;
     }
     fileReading.close();
 }
@@ -851,9 +871,13 @@ void runCode()
     }
     case 2:
     {
+
         int printinfo = 0;
+
         while (1)
         {
+            // // cout << hex << buffer_ID_EX.PC  << " " << buffer_EX_MEM.PC   << dec << endl;
+            
             cout << "Press 0 to move on" << endl;
             cout << "Press 1 to print register file " << endl;
             cout << "Press 2 to print memory" << endl;
@@ -897,6 +921,8 @@ void runCode()
                 }
                 break;
             }
+            
+
         }
         break;
     }
