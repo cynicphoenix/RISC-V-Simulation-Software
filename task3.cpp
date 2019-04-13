@@ -878,7 +878,14 @@ void printRegisterFile()
     cout << "-------------------------------------------" << endl;
 }
 //End of print RegisterFile
-
+bool detectDataHazard()
+{
+    if((buffer_ID_EX.addressB!=0) && (buffer_ID_EX.addressA!=0) && (buffer_EX_MEM.addressC!=0) && ((buffer_EX_MEM.addressC==buffer_ID_EX.addressA)||(buffer_EX_MEM.addressC==buffer_ID_EX.addressB)))
+        return true;
+    if((buffer_ID_EX.addressB!=0) && (buffer_ID_EX.addressA!=0) && (buffer_MEM_WB.addressC!=0) && ((buffer_MEM_WB.addressC==buffer_ID_EX.addressB)||(buffer_MEM_WB.addressC==buffer_ID_EX.addressB)))
+        return true;
+    return false;
+}
 //Run Instructions: unpipelined
 void runCode()
 {
