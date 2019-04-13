@@ -938,6 +938,7 @@ int main(){
 	
 	//To read input from Assembly Code File 
 	while(getline(fileReading, assemblyLine)){
+		cout<<assemblyLine<<endl;
 		if(assemblyLine==".data")
 			datasegment=1;
 		if(assemblyLine==".text"){
