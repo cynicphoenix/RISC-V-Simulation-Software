@@ -71,7 +71,7 @@ Buffer_MEM_WB buffer_MEM_WB;
 #define OPCODE_I1 3   //for load
 #define OPCODE_I2 19  // for shift, ori, andi
 #define OPCODE_I3 27  // for shiftw and addiw
-#define OPCODE_I4 103 //for jalr----->branch/jump
+#define OPCODE_I4 103 //for jalr
 
 #define OPCODE_U1 23 // for auipc
 #define OPCODE_U2 55 // for lui
@@ -81,9 +81,9 @@ Buffer_MEM_WB buffer_MEM_WB;
 #define OPCODE_R1 51 //for add, sub, and etc
 #define OPCODE_R2 59 // for addw, subw etc
 
-#define OPCODE_SB1 99 //for branch jump---->
+#define OPCODE_SB1 99 //for branch jump
 
-#define OPCODE_UJ 111 //for jal---->branch/jump
+#define OPCODE_UJ 111 //for jal
 
 #define FETCH_STAGE 1
 #define DECODE_STAGE 2
