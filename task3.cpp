@@ -95,9 +95,15 @@ Buffer_MEM_WB buffer_MEM_WB;
 #define EXECUTE_STAGE 3
 #define MEM_STAGE 4
 #define WB_STAGE 5
+
+#define NO_DATA_DEPEND 0
 #define DATA_DEPEND_RA 1
 #define DATA_DEPEND_RB 2
-#define NO_DATA_DEPEND 0
+#define DATA_DEPEND_RA_RB 3
+#define DATA_DEPENED_MtoM 4
+
+#define OFF 0
+#define ON 1
 
 int PC_of_stalledStageEtoE=INT_MAX;
 int PC_of_stalledStageMtoE=INT_MAX;
@@ -888,40 +894,92 @@ void printRegisterFile()
         cout << "REGISTER x" << i << "\t" << regArray[i] << endl;
     cout << "-------------------------------------------" << endl;
 }
-//End of print RegisterFile
-int EtoE()
+//Check data dependency Execute to Execute
+int EtoE(bool knob2)
 {
-    if(buffer_EX_MEM.addressC==0)
+    if(buffer_EX_MEM.addressC == 0)
         return NO_DATA_DEPEND;
-    if(buffer_ID_EX.addressA== buffer_EX_MEM.addressC)
-        {
-            PC_of_stalledStageEtoE=buffer_ID_EX.PC;
+
+     if(buffer_ID_EX.addressA == buffer_EX_MEM.addressC && buffer_ID_EX.addressB == buffer_EX_MEM.addressC)
+    {
+            if(knob2)
+                buffer_ID_EX.RA = buffer_ID_EX.RB = buffer_EX_MEM.RZ;
+            else
+                PC_of_stalledStageEtoE = buffer_ID_EX.PC;
+            return DATA_DEPEND_RA_RB;
+    }    
+    if(buffer_ID_EX.addressA == buffer_EX_MEM.addressC)
+    {
+            if(knob2)
+                buffer_ID_EX.RA = buffer_EX_MEM.RZ;
+            else
+                PC_of_stalledStageEtoE = buffer_ID_EX.PC;
             return DATA_DEPEND_RA;
-        }
-    if(buffer_ID_EX.addressB== buffer_EX_MEM.addressC)
-        {
-            PC_of_stalledStageEtoE=buffer_ID_EX.PC;
+    }
+    if(buffer_ID_EX.addressB == buffer_EX_MEM.addressC)
+    {
+            if(knob2)
+                buffer_ID_EX.RB = buffer_EX_MEM.RZ;
+            else
+                PC_of_stalledStageEtoE = buffer_ID_EX.PC;
             return DATA_DEPEND_RB;
-        }
+    }
     return NO_DATA_DEPEND;
 }
+//End of EtoE()
 
-int MtoE()
+//Check data dependency Memory to Execute
+int MtoE(bool knob2)
 {
-    if(buffer_MEM_WB.addressC==0)
+    if(buffer_MEM_WB.addressC == 0)
         return NO_DATA_DEPEND;
-    if(buffer_ID_EX.addressA== buffer_MEM_WB.addressC)
-        {
-            PC_of_stalledStageMtoE=buffer_ID_EX.PC;
+
+     if(buffer_ID_EX.addressA == buffer_MEM_WB.addressC && buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
+    {
+            if(knob2)
+                buffer_ID_EX.RA = buffer_ID_EX.RB = buffer_MEM_WB.RY;
+            else
+                PC_of_stalledStageMtoE = buffer_ID_EX.PC;
+            return DATA_DEPEND_RA_RB;
+    }    
+    if(buffer_ID_EX.addressA == buffer_MEM_WB.addressC)
+    {
+            if(knob2)
+                buffer_ID_EX.RA = buffer_MEM_WB.RY;
+            else
+                PC_of_stalledStageMtoE = buffer_ID_EX.PC;
             return DATA_DEPEND_RA;
-        }
-    if(buffer_ID_EX.addressB== buffer_MEM_WB.addressC)
-        {
-            PC_of_stalledStageMtoE=buffer_ID_EX.PC;
+    }
+    if(buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
+    {
+            if(knob2)
+                buffer_ID_EX.RB = buffer_MEM_WB.RY;
+            else
+                PC_of_stalledStageMtoE = buffer_ID_EX.PC;
             return DATA_DEPEND_RB;
-        }
-    return NO_DATA_DEPEND;   
+    }
+    return NO_DATA_DEPEND;
 }
+//End of MtoE()
+
+//Check data dependency Memory to Memory
+int MtoM(bool knob2)
+{
+    if(buffer_MEM_WB.addressC == 0)
+        return NO_DATA_DEPEND;
+
+    if(buffer_EX_MEM.addressC == buffer_MEM_WB.addressC)
+    {
+            if(knob2)
+                buffer_EX_MEM.RZ = buffer_MEM_WB.RY;
+            else
+                PC_of_stalledStageMtoM = buffer_EX_MEM.PC;
+            return DATA_DEPENED_MtoM;
+    }
+    return NO_DATA_DEPEND;
+}
+//End of MtoM()
+
 bool isbranchinstruction()
 {
     unsigned int opcode = buffer_IF_ID.IR << 25;
@@ -933,6 +991,7 @@ bool isbranchinstruction()
 //Run Instructions: unpipelined
 void runCode()
 {
+    bool knob2 = OFF;
     int choice;
     bool en = 1;
     cout << "-------------------------------------------" << endl;
@@ -973,7 +1032,7 @@ void runCode()
             }
             else buffer_ID_EX.en2=0;
 
-            int dataDependencyEtoE= EtoE();
+            int dataDependencyEtoE= EtoE(knob2);
             if(buffer_MEM_WB.en2==0 && buffer_EX_MEM.en2==0)
                 PC_of_stalledStageEtoE = INT_MAX;
                             
