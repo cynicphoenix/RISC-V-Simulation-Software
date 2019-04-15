@@ -68,10 +68,35 @@ struct Buffer_MEM_WB{
     }
 };
 
+struct Stats_Count{
+    unsigned int aluInstructions = 0;
+    unsigned int controlInstructions = 0;
+    unsigned int dataTransferInstructions = 0;
+
+    unsigned int RTypeInstructions = 0;
+    unsigned int ITypeInstructions = 0;
+    unsigned int STypeInstructions = 0;
+    unsigned int SBTypeInstructions = 0;
+    unsigned int UJTypeInstructions = 0;
+    unsigned int UTypeInstructions = 0;
+
+    unsigned int stalls = 0;
+    unsigned int stalls_data_hazard = 0;
+    unsigned int stalls_control_hazard = 0;
+
+    unsigned int data_hazard = 0;
+    unsigned int control_hazard = 0;
+    unsigned int branch_mispredictions = 0;
+
+    unsigned int cycleCount = 0;
+    unsigned int total_instructions = 0;
+};
+
 Buffer_IF_ID buffer_IF_ID;
 Buffer_ID_EX buffer_ID_EX;
 Buffer_EX_MEM buffer_EX_MEM;
 Buffer_MEM_WB buffer_MEM_WB;
+Stats_Count stats_count;
 
 #define OPCODE_I1 3   //for load
 #define OPCODE_I2 19  // for shift, ori, andi
@@ -125,8 +150,10 @@ void readWriteRegFile(int stage)
         }
     }
     if(stage == DECODE_STAGE){
-        buffer_ID_EX.RA = regArray[buffer_ID_EX.addressA];
-        buffer_ID_EX.RB = regArray[buffer_ID_EX.addressB];
+        if(!buffer_ID_EX.RF_WRITE){
+            buffer_ID_EX.RA = regArray[buffer_ID_EX.addressA];
+            buffer_ID_EX.RB = regArray[buffer_ID_EX.addressB];
+        }
     }
 }
 //End of readWriteRegFile
@@ -239,6 +266,9 @@ void decode()
     Y_SELECT = 0;
     if (opcode == OPCODE_I1)
     {
+        stats_count.ITypeInstructions++;
+        stats_count.dataTransferInstructions++;
+        
         RF_WRITE = 1;
         int imm = IR >> 20;
         unsigned int rs1 = IR << 12;
@@ -264,6 +294,9 @@ void decode()
 
     else if (opcode == OPCODE_I2)
     {
+        stats_count.ITypeInstructions++;
+        stats_count.aluInstructions++;
+        
         RF_WRITE = 1;
         int imm = IR >> 20;
         unsigned int rs1 = IR << 12;
@@ -329,6 +362,9 @@ void decode()
 
     else if (opcode == OPCODE_I3)
     {
+        stats_count.ITypeInstructions++;
+        stats_count.aluInstructions++;
+        
         RF_WRITE = 1;
         addressA = IR << 12;
         addressA >>= 27;
@@ -365,6 +401,9 @@ void decode()
 
     else if (opcode == OPCODE_I4)
     { //for jalr
+        stats_count.ITypeInstructions++;
+        stats_count.controlInstructions;
+        
         RF_WRITE = 1;
         int imm = IR >> 20;
         unsigned int rs1 = IR << 12;
@@ -384,6 +423,8 @@ void decode()
 
     else if (opcode == OPCODE_S1) //store
     {
+        stats_count.STypeInstructions++;
+        stats_count.dataTransferInstructions++;
 
         int tmp = (1 << 5) - 1;
         tmp <<= 7;
@@ -413,6 +454,9 @@ void decode()
 
     else if (opcode == OPCODE_U1) //auipc
     {
+        stats_count.UTypeInstructions++;
+        stats_count.aluInstructions++;
+        
         immediate = IR >> 12;
 
         addressC = IR << 20;
@@ -427,6 +471,9 @@ void decode()
 
     else if (opcode == OPCODE_U2) //lui
     {
+        stats_count.UTypeInstructions++;
+        stats_count.aluInstructions++;
+        
         immediate = IR >> 12;
 
         addressC = IR << 20;
@@ -440,6 +487,9 @@ void decode()
 
     else if (opcode == OPCODE_R1 || opcode == OPCODE_R2)
     {
+        stats_count.RTypeInstructions++;
+        stats_count.aluInstructions++;
+        
         unsigned int rs1 = IR << 12;
         rs1 >>= 27;
         unsigned int rs2 = IR << 7;
@@ -509,6 +559,9 @@ void decode()
 
     else if (opcode == OPCODE_UJ)
     {
+        stats_count.UJTypeInstructions++;
+        stats_count.controlInstructions++;
+        
         unsigned int rd = IR << 20;
         rd >>= 27;
         addressC = rd;
@@ -535,6 +588,9 @@ void decode()
 
     else if (opcode == OPCODE_SB1)
     {
+        stats_count.SBTypeInstructions++;
+        stats_count.controlInstructions++;
+        
         unsigned int rs1 = IR << 12;
         rs1 >>= 27;
         unsigned int rs2 = IR << 7;
@@ -984,8 +1040,10 @@ bool isbranchinstruction()
 {
     unsigned int opcode = buffer_IF_ID.IR << 25;
     opcode >>= 25;
-    if((opcode==OPCODE_SB1)||(opcode==OPCODE_UJ)||(opcode==OPCODE_I4))
+    if((opcode==OPCODE_SB1)||(opcode==OPCODE_UJ)||(opcode==OPCODE_I4)){
+        stats_count.control_hazard++;
         return true;
+    }
     return false;
 }
 //Run Instructions: unpipelined
@@ -1110,6 +1168,9 @@ void runCode()
     default:
         cout << "Wrong choice" << endl;
     }
+    stats_count.total_instructions = stats_count.aluInstructions + stats_count.controlInstructions + stats_count.dataTransferInstructions;
+    stats_count.stalls = stats_count.stalls_control_hazard + stats_count.stalls_data_hazard;
+
 }
 //End of runCode
 
