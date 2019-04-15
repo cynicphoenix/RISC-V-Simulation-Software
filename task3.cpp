@@ -8,10 +8,12 @@ struct Buffer_IF_ID{
     unsigned int PC;
     int IR;
     bool en;
+    bool en2;
     Buffer_IF_ID(){
         PC = 0;
         IR = 0;
         en = 0;
+        en2 = 0;
     }
 };
 
@@ -27,9 +29,10 @@ struct Buffer_ID_EX{
     int RF_WRITE;
     int addressA, addressB;
     unsigned int returnAddress; 
-    bool en;
+    bool en, en2;
     Buffer_ID_EX(){
         en = 0;
+        en2 = 0;
     }
 };
 
@@ -46,9 +49,10 @@ struct Buffer_EX_MEM{
     int RF_WRITE;
     int addressA, addressB;
     unsigned int returnAddress;
-    bool en;
+    bool en, en2;
     Buffer_EX_MEM(){
         en = 0;
+        en2 = 1;
     }
 };
 
@@ -57,9 +61,10 @@ struct Buffer_MEM_WB{
     int addressC;
     int RF_WRITE;
     int RY;
-    bool en;
+    bool en, en2;
     Buffer_MEM_WB(){
         en = 0;
+        en2 = 0;
     }
 };
 
@@ -90,7 +95,11 @@ Buffer_MEM_WB buffer_MEM_WB;
 #define EXECUTE_STAGE 3
 #define MEM_STAGE 4
 #define WB_STAGE 5
+#define DATA_DEPEND_RA 1
+#define DATA_DEPEND_RB 2
+#define NO_DATA_DEPEND 0
 
+int PC_of_stalledStage=INT_MAX;
 unsigned char memory[1 << 24]; //Processor Memory
 int regArray[32] = {0};
 int cycleCount = 0;
@@ -878,24 +887,22 @@ void printRegisterFile()
     cout << "-------------------------------------------" << endl;
 }
 //End of print RegisterFile
-bool EtoE()
+int EtoE()
 {
-    if((buffer_ID_EX.addressB!=0) && (buffer_ID_EX.addressA!=0) && (buffer_EX_MEM.addressC!=0) && ((buffer_EX_MEM.addressC==buffer_ID_EX.addressA)||(buffer_EX_MEM.addressC==buffer_ID_EX.addressB)))
-        return true;
-    return false;
-}
-bool MtoM()
-{
-    if((buffer_ID_EX.addressB!=0) && (buffer_ID_EX.addressA!=0) && (buffer_MEM_WB.addressC!=0) && ((buffer_MEM_WB.addressC==buffer_ID_EX.addressB)||(buffer_MEM_WB.addressC==buffer_ID_EX.addressB)))
-        return true;
-    return false;
-}
-bool MtoE()
-{
-    if((buffer_MEM_WB.addressC!=0) && (buffer_ID_EX.addressB!=0) && (buffer_ID_EX.addressA!=0) && ((buffer_MEM_WB.addressC==buffer_ID_EX.addressA)||(buffer_MEM_WB.addressC==buffer_ID_EX.addressA)))
-        return true;
-    else
-        return false;
+    if(buffer_MEM_WB.addressC==0)
+        return NO_DATA_DEPEND;
+    if(buffer_ID_EX.addressA== buffer_EX_MEM.addressC)
+        {
+            PC_of_stalledStage=buffer_ID_EX.PC;
+            return DATA_DEPEND_RA;
+        }
+    if(buffer_ID_EX.addressB== buffer_EX_MEM.addressC)
+        {
+            PC_of_stalledStage=buffer_ID_EX.PC;
+            return DATA_DEPEND_RB;
+        }
+    return NO_DATA_DEPEND;
+
 }
 bool isbranchinstruction()
 {
@@ -923,11 +930,37 @@ void runCode()
         {
             if (memory[buffer_IF_ID.PC] == 0 && memory[buffer_IF_ID.PC + 1] == 0 && memory[buffer_IF_ID.PC + 2] == 0 && memory[buffer_IF_ID.PC + 3] == 0)
                 en = 0;
-            writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
-            memoryStage(buffer_EX_MEM.Y_SELECT, buffer_EX_MEM.MEM_READ, buffer_EX_MEM.MEM_WRITE, buffer_EX_MEM.RZ, buffer_EX_MEM.RB);
-            alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
-            decode();
-            fetch(en);
+            if(buffer_MEM_WB.en2==1 && PC_of_stalledStage > buffer_MEM_WB.PC)
+                writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
+
+            if(buffer_EX_MEM.en2==1 && PC_of_stalledStage > buffer_EX_MEM.PC)
+            {  
+               buffer_MEM_WB.en2=1;
+                memoryStage(buffer_EX_MEM.Y_SELECT, buffer_EX_MEM.MEM_READ, buffer_EX_MEM.MEM_WRITE, buffer_EX_MEM.RZ, buffer_EX_MEM.RB);
+            }
+            else  buffer_MEM_WB.en2=0;
+
+            if(buffer_ID_EX.en2==1 && PC_of_stalledStage > buffer_ID_EX.PC)
+            {
+                buffer_EX_MEM.en2=1;
+                alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
+            }
+            else buffer_EX_MEM.en2=0;
+
+            if(buffer_MEM_WB.en2==0 || PC_of_stalledStage==INT_MAX)
+            {
+                buffer_ID_EX.en2=1;
+                decode();
+                PC_of_stalledStage= INT_MAX;
+            }
+            else buffer_ID_EX.en2=0;
+
+            int dataDependency= EtoE();
+            if(buffer_MEM_WB.en2==0)
+                PC_of_stalledStage = INT_MAX;
+                            
+            if(PC_of_stalledStage == INT_MAX)
+                fetch(en);
             cout<<en<<" "<<buffer_IF_ID.en<<" "<<buffer_ID_EX.en<<" "<<buffer_EX_MEM.en<<" "<<buffer_MEM_WB.en<<endl;
             cycleCount++;
             if(en == 0 && buffer_IF_ID.en == 0 && buffer_ID_EX.en == 0 && buffer_EX_MEM.en == 0 && buffer_MEM_WB.en == 0) break;
