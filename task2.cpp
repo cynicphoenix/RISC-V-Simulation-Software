@@ -283,10 +283,8 @@ void decode()
 	else if (opcode == OPCODE_S1) //store
 	{
 
-		int tmp = (1 << 5) - 1;
-		tmp <<= 7;
-		int imm1 = IR & tmp;
-		imm1 >>= 7;
+		int imm1 = IR << 20;
+		imm1 >>= 27;
 		int imm2 = IR >> 25;
 		immediate = imm1 + (imm2 << 5);
 
@@ -448,17 +446,10 @@ void decode()
 
 		RF_WRITE = 0;
 		B_SELECT = 0;
-		if (funct3 == 5) //bge
+		if (funct3 == 5 || funct3 == 7) //bge,bgeu
 			ALU_OP = 3;
-		else if(funct3 == 7){	//bgeu
-			ALU_OP = 34;
-		}
-		else if (funct3 == 4) //blt
+		else if (funct3 == 4 || funct3 == 6) //blt,bltu
 			ALU_OP = 4;
-
-		else if(funct3 == 6){	//bltu
-		ALU_OP = 35;
-		}
 		else if (funct3 == 0) //beq
 			ALU_OP = 2;
 		else if (funct3 == 1) //bne Update task2.cpp
@@ -506,26 +497,6 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 	else if (ALU_OP == 3) //bge
 	{
 		if (InA >= InB)
-		{
-			INC_SELECT = 1;
-			PC -= 4;
-			iag(INC_SELECT, 1, immediate);
-		}
-	}
-
-	//bgeu
-	else if(ALU_OP == 34){
-		if((unsigned) InA >= (unsigned) InB)
-		{
-			INC_SELECT = 1;
-			PC -= 4;
-			iag(INC_SELECT, 1, immediate);
-		}
-	}
-
-	//bltu
-	else if(ALU_OP == 35){
-		if ((unsigned) InA < (unsigned) InB)
 		{
 			INC_SELECT = 1;
 			PC -= 4;
@@ -628,7 +599,6 @@ void writeBack(int RF_WRITE, int addressC)
 //End of writeBack
 
 //Update memory with data & instructions
-//Update memory with data & instructions
 void updateMemory()
 {
 	string machineLine;
@@ -668,24 +638,23 @@ void updateMemory()
 	fileReading.close();
 
 	fileReading.open("machineCode.mc");
-	lli address = 0;
 	while (getline(fileReading, machineLine))
 	{
-		lli value = 0;
+		lli value = 0, address = 0;
 
 		int i = 2; //initially : 0x
-				   //        while (machineLine[i] != ' ')
-				   //            address = address * 16 + hexadecimal[machineLine[i++]];
+		while (machineLine[i] != ' ')
+			address = address * 16 + hexadecimal[machineLine[i++]];
 
-		//        i += 3; //between : 0x
+		i += 3; //between : 0x
 		while (i < machineLine.length())
 			value = value * 16 + hexadecimal[machineLine[i++]];
 
 		readWriteMemory(0, 3, address, value);
-		address += 4;
 	}
 	fileReading.close();
 }
+//End of updateMemory
 
 //Prints memory that has been alloted with data or instruction!
 void printMemory()
@@ -803,3 +772,12 @@ int main()
 	cout << "Number of Cycles = " << cycleCount << endl;
 }
 //End of main
+/********************************for task3*********************
+bool detectDataHazard()
+{
+    if((buffer_ID_EX.addressB!=0) && (buffer_ID_EX.addressA!=0) && (buffer_EX_MEM.addressC!=0) && ((buffer_EX_MEM.addressC==buffer_ID_EX.addressA)||(buffer_EX_MEM.addressC==buffer_ID_EX.addressB)))
+        return true;
+    if((buffer_ID_EX.addressB!=0) && (buffer_ID_EX.addressA!=0) && (buffer_MEM_WB.addressC!=0) && ((buffer_MEM_WB.addressC==buffer_ID_EX.addressB)||(buffer_MEM_WB.addressC==buffer_ID_EX.addressB)))
+        return true;
+    return false;
+}*.*/
