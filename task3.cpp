@@ -951,6 +951,79 @@ void printRegisterFile()
     cout << "-------------------------------------------" << endl;
 }
 //Check data dependency Execute to Execute
+int forward_dependency_EtoE(bool knob2)
+{
+    if(buffer_EX_MEM.addressC == 0)
+        return NO_DATA_DEPEND;
+
+     if(buffer_ID_EX.addressA == buffer_EX_MEM.addressC && buffer_ID_EX.addressB == buffer_EX_MEM.addressC)
+    {
+        if(knob2)
+            buffer_ID_EX.RA = buffer_ID_EX.RB = buffer_EX_MEM.RZ;
+        return DATA_DEPEND_RA_RB;
+    }    
+    if(buffer_ID_EX.addressA == buffer_EX_MEM.addressC)
+    {
+        if(knob2)
+            buffer_ID_EX.RA = buffer_EX_MEM.RZ;
+        return DATA_DEPEND_RA;
+    }
+    if(buffer_ID_EX.addressB == buffer_EX_MEM.addressC)
+    {
+        if(knob2)
+            buffer_ID_EX.RB = buffer_EX_MEM.RZ;
+        return DATA_DEPEND_RB;
+    }
+    return NO_DATA_DEPEND;
+}
+//End of forward_dependency_EtoE()
+
+//Check forward dependency Memory to Execute
+int forward_dependency_MtoE(bool knob2)
+{
+    if(buffer_MEM_WB.addressC == 0)
+        return NO_DATA_DEPEND;
+
+     if(buffer_ID_EX.addressA == buffer_MEM_WB.addressC && buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
+    {
+        if(knob2)
+            buffer_ID_EX.RA = buffer_ID_EX.RB = buffer_MEM_WB.RY;
+        return DATA_DEPEND_RA_RB;
+    }    
+
+    if(buffer_ID_EX.addressA == buffer_MEM_WB.addressC)
+    {     
+        if(knob2)
+            buffer_ID_EX.RA = buffer_MEM_WB.RY;
+        return DATA_DEPEND_RA;
+    }
+    if(buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
+    {
+        if(knob2)
+            buffer_ID_EX.RB = buffer_MEM_WB.RY;
+        return DATA_DEPEND_RB;
+    }
+    return NO_DATA_DEPEND;
+}
+//End of forward_dependency_MtoE()
+
+//Check data dependency Memory to Memory
+int MtoM(bool knob2)
+{
+    if(buffer_MEM_WB.addressC == 0)
+        return NO_DATA_DEPEND;
+
+    if(buffer_EX_MEM.addressC == buffer_MEM_WB.addressC)
+    {
+        if(knob2)
+            buffer_EX_MEM.RZ = buffer_MEM_WB.RY;
+        return DATA_DEPENED_MtoM;
+    }
+    return NO_DATA_DEPEND;
+}
+//End of MtoM()
+
+//Check data stalling Execute to Execute
 int EtoE(bool knob2)
 {
     if(buffer_EX_MEM.addressC == 0)
@@ -958,33 +1031,24 @@ int EtoE(bool knob2)
 
      if(buffer_ID_EX.addressA == buffer_EX_MEM.addressC && buffer_ID_EX.addressB == buffer_EX_MEM.addressC)
     {
-            if(knob2)
-                buffer_ID_EX.RA = buffer_ID_EX.RB = buffer_EX_MEM.RZ;
-            else
-                PC_of_stalledStageEtoE = buffer_ID_EX.PC;
-            return DATA_DEPEND_RA_RB;
+        PC_of_stalledStageEtoE = buffer_ID_EX.PC;
+        return DATA_DEPEND_RA_RB;
     }    
     if(buffer_ID_EX.addressA == buffer_EX_MEM.addressC)
     {
-            if(knob2)
-                buffer_ID_EX.RA = buffer_EX_MEM.RZ;
-            else
-                PC_of_stalledStageEtoE = buffer_ID_EX.PC;
-            return DATA_DEPEND_RA;
+        PC_of_stalledStageEtoE = buffer_ID_EX.PC;
+        return DATA_DEPEND_RA;
     }
     if(buffer_ID_EX.addressB == buffer_EX_MEM.addressC)
     {
-            if(knob2)
-                buffer_ID_EX.RB = buffer_EX_MEM.RZ;
-            else
-                PC_of_stalledStageEtoE = buffer_ID_EX.PC;
-            return DATA_DEPEND_RB;
+        PC_of_stalledStageEtoE = buffer_ID_EX.PC;
+        return DATA_DEPEND_RB;
     }
     return NO_DATA_DEPEND;
 }
 //End of EtoE()
 
-//Check data dependency Memory to Execute
+//Check data stalling Memory to Execute
 int MtoE(bool knob2)
 {
     if(buffer_MEM_WB.addressC == 0)
@@ -992,31 +1056,19 @@ int MtoE(bool knob2)
 
      if(buffer_ID_EX.addressA == buffer_MEM_WB.addressC && buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
     {
-            if(knob2)
-                buffer_ID_EX.RA = buffer_ID_EX.RB = buffer_MEM_WB.RY;
-            else{
-                PC_of_stalledStageMtoE = buffer_ID_EX.PC;
-            }
-            return DATA_DEPEND_RA_RB;
+        PC_of_stalledStageMtoE = buffer_ID_EX.PC;
+        return DATA_DEPEND_RA_RB;
     }    
 
     if(buffer_ID_EX.addressA == buffer_MEM_WB.addressC)
     {     
-            if(knob2)
-                buffer_ID_EX.RA = buffer_MEM_WB.RY;
-            else{
-                    PC_of_stalledStageMtoE = buffer_ID_EX.PC;
-            }
-            return DATA_DEPEND_RA;
+        PC_of_stalledStageMtoE = buffer_ID_EX.PC;    
+        return DATA_DEPEND_RA;
     }
     if(buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
     {
-            if(knob2)
-                buffer_ID_EX.RB = buffer_MEM_WB.RY;
-            else{
-                PC_of_stalledStageMtoE = buffer_ID_EX.PC;
-            }
-            return DATA_DEPEND_RB;
+        PC_of_stalledStageMtoE = buffer_ID_EX.PC;
+        return DATA_DEPEND_RB;
     }
     return NO_DATA_DEPEND;
 }
@@ -1030,11 +1082,8 @@ int MtoM(bool knob2)
 
     if(buffer_EX_MEM.addressC == buffer_MEM_WB.addressC)
     {
-            if(knob2)
-                buffer_EX_MEM.RZ = buffer_MEM_WB.RY;
-            else
-                PC_of_stalledStageMtoM = buffer_EX_MEM.PC;
-            return DATA_DEPENED_MtoM;
+        PC_of_stalledStageMtoM = buffer_EX_MEM.PC;
+        return DATA_DEPENED_MtoM;
     }
     return NO_DATA_DEPEND;
 }
