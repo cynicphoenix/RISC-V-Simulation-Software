@@ -4,6 +4,11 @@
 #define lli long long int
 using namespace std;
 
+#define OFF 0
+#define ON 1
+#define TRUE 0
+#define FALSE 1
+
 struct Buffer_IF_ID{
     unsigned int PC;
     int IR;
@@ -21,6 +26,7 @@ struct Buffer_ID_EX{
     unsigned int PC;
     int RA;
     int RB;
+    int RZ; // for branch instructions
     int addressC;
     int immediate;
     int ALU_OP, B_SELECT, PC_SELECT, INC_SELECT, Y_SELECT;
@@ -28,7 +34,9 @@ struct Buffer_ID_EX{
     int MEM_WRITE;
     int RF_WRITE;
     int addressA, addressB;
-    unsigned int returnAddress; 
+    unsigned int returnAddress;
+    bool branchTaken = FALSE;
+    bool isBranchInstruction = FALSE;
     bool en, en2;
     Buffer_ID_EX(){
         en = 0;
@@ -127,9 +135,6 @@ Stats_Count stats_count;
 #define DATA_DEPEND_RB 2
 #define DATA_DEPEND_RA_RB 3
 #define DATA_DEPENED_MtoM 4
-
-#define OFF 0
-#define ON 1
 
 int PC_of_stalledStageEtoE=INT_MAX;
 int PC_of_stalledStageMtoE=INT_MAX;
@@ -240,7 +245,7 @@ void fetch(bool en)
     // cout << hex << buffer_IF_ID.IR <<" "<<buffer_IF_ID.PC << dec << endl;
     
 }
-//end of fetch
+//End of fetch
 
 /* Stage 2: Decode Stage
 RA & RB will be updated after this stage */
@@ -265,6 +270,7 @@ void decode()
     PC_SELECT = 1;
     INC_SELECT = 0;
     Y_SELECT = 0;
+
     if (opcode == OPCODE_I1)
     {
         stats_count.ITypeInstructions++;
@@ -420,6 +426,16 @@ void decode()
         addressC = rd;
         MEM_READ = 0;
         MEM_WRITE = 0;
+
+        //Execute moved to decode : Control Hazard
+        int InA = regArray[rs1];
+        int InB = immediate;
+        buffer_ID_EX.RZ = InA + InB;
+        buffer_EX_MEM.RZ = buffer_ID_EX.RZ;
+        buffer_ID_EX.PC -= 4;
+        buffer_ID_EX.returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+        buffer_ID_EX.isBranchInstruction = TRUE;
+        buffer_ID_EX.branchTaken = TRUE;
     }
 
     else if (opcode == OPCODE_S1) //store
@@ -559,7 +575,7 @@ void decode()
     }
 
     else if (opcode == OPCODE_UJ)
-    {
+    { //jal
         stats_count.UJTypeInstructions++;
         stats_count.controlInstructions++;
         
@@ -585,6 +601,12 @@ void decode()
         MEM_READ = 0;
         MEM_WRITE = 0;
         Y_SELECT = 2;
+
+        buffer_ID_EX.PC -= 4;
+        PC_SELECT = 1;
+        returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+        buffer_ID_EX.isBranchInstruction = TRUE;
+        buffer_ID_EX.branchTaken = TRUE;
     }
 
     else if (opcode == OPCODE_SB1)
@@ -605,25 +627,76 @@ void decode()
         immediate = bit_1_4 | bit_5_10 | bit_11 | bit_12;
         immediate <<= 1;
 
+        PC_SELECT = 1;
+        INC_SELECT = 1;
         RF_WRITE = 0;
         B_SELECT = 0;
-        if (funct3 == 5) //bge
+        buffer_ID_EX.isBranchInstruction = TRUE;
+        int InA = regArray[rs1];
+        int InB = regArray[rs2];
+
+        if (funct3 == 5)
+        { //bge
             ALU_OP = 3;
+            if (InA >= InB)
+            {
+                buffer_ID_EX.branchTaken = TRUE;
+                buffer_ID_EX.PC -= 4;
+                iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+            }
+        }
         else if (funct3 == 7)
         { //bgeu
             ALU_OP = 34;
+            if ((unsigned)InA >= (unsigned)InB)
+            {
+                buffer_ID_EX.branchTaken = TRUE;
+                buffer_ID_EX.PC -= 4;
+                iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+            }
         }
-        else if (funct3 == 4) //blt
+        else if (funct3 == 4)
+        { //blt
             ALU_OP = 4;
-
+            if ((unsigned)InA < (unsigned)InB)
+            {
+                buffer_ID_EX.branchTaken = TRUE;
+                buffer_ID_EX.PC -= 4;
+                iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+            }
+        }
         else if (funct3 == 6)
         { //bltu
             ALU_OP = 35;
+            if ((unsigned)InA < (unsigned)InB)
+            {
+                buffer_ID_EX.branchTaken = TRUE;
+                buffer_ID_EX.PC -= 4;
+                iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+            }
         }
-        else if (funct3 == 0) //beq
+        else if (funct3 == 0)
+        { //beq
             ALU_OP = 2;
-        else if (funct3 == 1) //bne Update task2.cpp
+            if (InA == InB)
+            {
+                buffer_ID_EX.branchTaken = TRUE;
+                buffer_ID_EX.PC -= 4;
+                iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+            }
+
+        }
+        else if (funct3 == 1) //bne
+        {
             ALU_OP = 5;
+            if (InA != InB)
+            {
+                buffer_ID_EX.branchTaken = TRUE;
+                buffer_ID_EX.PC -= 4;
+                iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+            }
+        }
+        
         addressA = rs1;
         addressB = rs2;
         addressC = 0;
@@ -700,7 +773,7 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
     else if (ALU_OP == 1) //andi
         RZ = InA & InB;
 
-    else if (ALU_OP == 2) //beq
+    /*else if (ALU_OP == 2) //beq
     {
         if (InA == InB)
         {
@@ -747,15 +820,15 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 
     else if (ALU_OP == 4) //blt
     {
-        cout << "blt: " << buffer_ID_EX.PC << endl;
-        cout<<InA<<" "<<InB<<endl;
+        //cout << "blt: " << buffer_ID_EX.PC << endl;
+        //cout<<InA<<" "<<InB<<endl;
         if (InA < InB)
         {
             INC_SELECT = 1;
             buffer_ID_EX.PC -= 4;
             PC_SELECT = 1;
             iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
-            cout << "blt: " << buffer_ID_EX.PC << endl;
+            //cout << "blt: " << buffer_ID_EX.PC << endl;
         }
         
     }
@@ -769,7 +842,7 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
             PC_SELECT = 1;
             iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
         }
-    }
+    }*/
 
     else if (ALU_OP == 6) //ori
         RZ = InA | InB;
@@ -801,14 +874,13 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
         RZ = InA >> InB;
         RZ |= InA & (1 << 31);
     }
-    else if (ALU_OP == 22) //jalr
+    /*else if (ALU_OP == 22) //jalr
     {
-//        cout<<InA<<' '<<InB<<' ';
         buffer_EX_MEM.RZ = InA + InB;
         RZ=InA+InB;
         buffer_ID_EX.PC -= 4;
         returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
-    }
+    }*/
     else if (ALU_OP == 25) //mul
         RZ = RA * RB;
 
@@ -818,19 +890,18 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
     else if (ALU_OP == 31 || ALU_OP == 32) // rem, remu
         RZ = RA % RB;
 
-    else if (ALU_OP == -1)
+    /*else if (ALU_OP == -1)
     { // jal
         buffer_ID_EX.PC -= 4;
         PC_SELECT = 1;
         returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
-    }
-
-    buffer_EX_MEM.RZ = RZ;
+    }*/
+    if(ALU_OP != 22)//jalr
+        buffer_EX_MEM.RZ = RZ;
     buffer_EX_MEM.returnAddress = returnAddress;
     buffer_EX_MEM.INC_SELECT = INC_SELECT;
     buffer_EX_MEM.PC_SELECT = PC_SELECT;
     buffer_EX_MEM.PC = buffer_ID_EX.PC;
-    //cout<<hex<<buffer_EX_MEM.PC<<dec<<endl;
 }
 //end of ALU function
 
@@ -1075,17 +1146,6 @@ int stall_check_MtoE()
 }
 //End of stall_check_MtoE()
 
-bool isbranchinstruction()
-{
-    unsigned int opcode = buffer_IF_ID.IR << 25;
-    opcode >>= 25;
-    if((opcode==OPCODE_SB1)||(opcode==OPCODE_UJ)||(opcode==OPCODE_I4)){
-        stats_count.control_hazard++;
-        return true;
-    }
-    return false;
-}
-
 //Print stats in stats.txt file
 void stats_print()
 {
@@ -1094,7 +1154,6 @@ void stats_print()
     stats_count.CPI = (double)stats_count.cycleCount/(double)stats_count.total_instructions;
     fstream fileWriting;
     fileWriting.open("stats.txt", ios::out);
-    fileWriting<<"----------------------------------------------------------------------"<<endl;
     fileWriting<<"----------------------------------------------------------------------"<<endl;
     fileWriting<<"Total Cycles               :  "<<stats_count.cycleCount<<endl;
     fileWriting<<"Total Instructions         :  "<<stats_count.total_instructions<<endl;
@@ -1119,7 +1178,6 @@ void stats_print()
     fileWriting<<"Total Stalls               :  "<<stats_count.stalls<<endl;
     fileWriting<<"----------------------------------------------------------------------"<<endl;
     fileWriting<<"Branch Mis-predictions     :  "<<stats_count.branch_mispredictions<<endl;
-    fileWriting<<"----------------------------------------------------------------------"<<endl;
     fileWriting<<"----------------------------------------------------------------------"<<endl;
     fileWriting.close();
 }
