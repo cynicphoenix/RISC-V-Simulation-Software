@@ -90,6 +90,7 @@ struct Stats_Count{
 
     unsigned int cycleCount = 0;
     unsigned int total_instructions = 0;
+    double CPI = 0;
 };
 
 Buffer_IF_ID buffer_IF_ID;
@@ -876,7 +877,7 @@ void writeBack(int RF_WRITE, int addressC)
 void updateMemory()
 {
     string machineLine;
-     string machineCode;
+    string machineCode;
     fstream fileReading;
 
     map<char, int> hexadecimal;
@@ -1085,20 +1086,62 @@ bool isbranchinstruction()
     return false;
 }
 
+//Print stats in stats.txt file
+void stats_print()
+{
+    stats_count.total_instructions = stats_count.aluInstructions + stats_count.controlInstructions + stats_count.dataTransferInstructions;
+    stats_count.stalls = stats_count.stalls_control_hazard + stats_count.stalls_data_hazard;
+    stats_count.CPI = (double)stats_count.cycleCount/(double)stats_count.total_instructions;
+    fstream fileWriting;
+    fileWriting.open("stats.txt", ios::out);
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    fileWriting<<"Total Cycles               :  "<<stats_count.cycleCount<<endl;
+    fileWriting<<"Total Instructions         :  "<<stats_count.total_instructions<<endl;
+    fileWriting<<"CPI                        :  "<<stats_count.CPI<<endl;
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    fileWriting<<"R Type                     :  "<<stats_count.RTypeInstructions<<endl;
+    fileWriting<<"I Type                     :  "<<stats_count.ITypeInstructions<<endl;
+    fileWriting<<"S Type                     :  "<<stats_count.STypeInstructions<<endl;
+    fileWriting<<"SB Type                    :  "<<stats_count.SBTypeInstructions<<endl;
+    fileWriting<<"U Type                     :  "<<stats_count.UTypeInstructions<<endl;
+    fileWriting<<"UJ Type                    :  "<<stats_count.UJTypeInstructions<<endl;
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    fileWriting<<"Data-Transfer Instructions :  "<<stats_count.dataTransferInstructions<<endl;
+    fileWriting<<"ALU Instruction            :  "<<stats_count.aluInstructions<<endl;
+    fileWriting<<"Control Instructions       :  "<<stats_count.controlInstructions<<endl;
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    fileWriting<<"Data Hazards               :  "<<stats_count.data_hazard<<endl;
+    fileWriting<<"Control Hazards            :  "<<stats_count.control_hazard<<endl;
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    fileWriting<<"Stalls due Data Hazard     :  "<<stats_count.stalls_data_hazard<<endl;
+    fileWriting<<"Stalls due Control Hazard  :  "<<stats_count.stalls_control_hazard<<endl;
+    fileWriting<<"Total Stalls               :  "<<stats_count.stalls<<endl;
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    fileWriting<<"Branch Mis-predictions     :  "<<stats_count.branch_mispredictions<<endl;
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    fileWriting.close();
+}
+//End of stats_print()
+
 //Run Instructions: unpipelined
 void runCode()
 {
-    bool knob2 = OFF;
-    int choice;
+    bool knob1 = ON; //Enable-disable pipeling
+    bool knob2 = OFF; //Enable-disable data forwarding
+    bool knob3 = OFF; //Print Register File after every cycle
+    bool knob4 = OFF; //Print Data in pipeline register along with cycle number
+    bool knob5 = OFF; //Print data of particular instruction with cycle number
     bool en = 1;
     cout << "-------------------------------------------" << endl;
-    cout << "Press 1 to run the whole pogram " << endl;
-    cout << "Press 2 to run it step by step" << endl;
-    cin >> choice;
+    cout << "Press 0 : Run Whole Program" << endl;
+    cout << "Press 1 : Run Step by Step" << endl;
+    cin >> knob4;
     cout << "-------------------------------------------" << endl;
-    switch (choice)
+    switch ((int)knob4)
     {
-    case 1:
+    case OFF:
     {
         while (1)
         {
@@ -1147,7 +1190,7 @@ void runCode()
         }
         break;
     }
-    case 2:
+    case ON:
     {
 
         int printinfo = 0;
@@ -1156,12 +1199,13 @@ void runCode()
         {
             // // cout << hex << buffer_ID_EX.PC  << " " << buffer_EX_MEM.PC   << dec << endl;
             
-            cout << "Press 0 to move on" << endl;
-            cout << "Press 1 to print register file " << endl;
-            cout << "Press 2 to print memory" << endl;
-            cout << "Press 3 to execute to end" << endl;
-            cout << "-------------------------------------------" << endl;
+            cout << "Press 0 : Next Cycle" << endl;
+            cout << "Press 1 : Print Register File " << endl;
+            cout << "Press 2 : Print Memory" << endl;
+            cout << "Press 3 : Execute to End" << endl;
             cin >> printinfo;
+            cout << "-------------------------------------------" << endl;
+
             if (printinfo == 1)
             {
                 printRegisterFile();
@@ -1212,9 +1256,6 @@ void runCode()
     default:
         cout << "Wrong choice" << endl;
     }
-    stats_count.total_instructions = stats_count.aluInstructions + stats_count.controlInstructions + stats_count.dataTransferInstructions;
-    stats_count.stalls = stats_count.stalls_control_hazard + stats_count.stalls_data_hazard;
-
 }
 //End of runCode
 
@@ -1228,6 +1269,6 @@ int main()
     updateMemory(); //Update memory with data & instructions
     runCode();
     printRegisterFile();
-    cout << "Number of Cycles = " << cycleCount << endl;
+    stats_print();
 }
 //End of main
