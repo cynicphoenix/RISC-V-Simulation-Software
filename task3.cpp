@@ -35,8 +35,8 @@ struct Buffer_ID_EX{
     int RF_WRITE;
     int addressA, addressB;
     unsigned int returnAddress;
-    bool branchTaken = FALSE;
-    bool isBranchInstruction = FALSE;
+    bool branchTaken;
+    bool isBranchInstruction;
     bool en, en2;
     Buffer_ID_EX(){
         en = 0;
@@ -253,6 +253,8 @@ void decode()
 {
     if (buffer_IF_ID.en == 0)
         return;
+    buffer_ID_EX.isBranchInstruction = FALSE;
+    buffer_ID_EX.branchTaken = FALSE;
     int addressA, addressB = 0, addressC;
     int IR = buffer_IF_ID.IR;
     unsigned int PC = buffer_IF_ID.PC;
