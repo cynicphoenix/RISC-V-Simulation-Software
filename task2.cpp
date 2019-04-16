@@ -20,7 +20,19 @@ using namespace std;
 #define OPCODE_SB1 99 //for branch jump
 
 #define OPCODE_UJ 111 //for jal
-
+struct cache
+{
+	bool validBit;
+	unsigned char data[4];//block size of 2 words(or 8 bytes)
+	unsigned int tag;//15 bits
+	cache(){
+		validBit=0;
+	}
+};
+cache Cache[1<<14];
+int memoryAccesses;
+int conflictMisses;
+int coldMisses;
 unsigned char memory[1 << 24]; //Processor Memory
 int regArray[32] = {0};
 int cycleCount = 0;
@@ -37,7 +49,136 @@ int ALU_OP, B_SELECT, PC_SELECT, INC_SELECT, Y_SELECT;
 int MEM_READ;
 int MEM_WRITE;
 int RF_WRITE;
-
+int readWriteCache(int MEM_READ, int MEM_WRITE, int address=0, int data_w=0)
+{
+	int MOD = 1<<14;
+	unsigned int temp = address>>2;
+	unsigned int Index = temp%MOD;
+	unsigned int Tag = temp>>14;
+	unsigned int i1 = (address)%4;
+	unsigned int i2 = (address+1)%4;
+	unsigned int i3 = (address+2)%4;
+	unsigned int i4 = (address+3)%4;
+	if(MEM_READ>0)
+	{
+		memoryAccesses++;
+		if(Cache[Index].validBit==1 && Cache[Index].tag==Tag)
+		{
+			if(MEM_READ==1)
+				return (int)Cache[Index].data[i1];
+			if(MEM_READ==2)
+			{
+				int x = Cache[Index].data[i1];
+				x += (int)((Cache[Index].data[i2])<<8);
+				return x;
+			}
+			if(MEM_READ==3)
+			{
+				int x = Cache[Index].data[i1];
+				x += (int)Cache[Index].data[i2]<<8;
+				x += (int)Cache[Index].data[i3]<<16;
+				x += (int)Cache[Index].data[i4]<<24;
+				return x;
+			}
+		}
+		else
+		{
+			if(Cache[Index].validBit==0)
+				coldMisses++;
+			if(Cache[Index].validBit==1 && Cache[Index].tag!=Tag)
+				conflictMisses++;
+			Cache[Index].validBit=1;
+			Cache[Index].tag = Tag;
+			Cache[Index].data[i1]=memory[address];
+			Cache[Index].data[i2]=memory[address+1];
+			Cache[Index].data[i3]=memory[address+2];
+			Cache[Index].data[i4]=memory[address+3];
+			if(MEM_READ==1)
+				return memory[address];
+			if(MEM_READ==2)
+			{
+				int x = memory[address];
+				x += (int)memory[address + 1] << 8;
+				return x; 
+			}
+			if(MEM_READ==3)
+			{
+				int x = memory[address];
+				x += (int)memory[address+1]<<8;
+				x += (int)memory[address+2]<<16;
+				x += (int)memory[address+3]<<24;
+				return x;
+			}
+		}
+	}
+	else
+	{
+		if(MEM_WRITE==1)
+		{
+			memory[address]=data_w;
+			if(Cache[Index].validBit==0)
+			{
+				Cache[Index].validBit=1;
+				Cache[Index].tag = Tag;
+				Cache[Index].data[i1]=data_w;
+				Cache[Index].data[i2]=memory[address+1];
+				Cache[Index].data[i3]=memory[address+2];
+				Cache[Index].data[i4]=memory[address+3];
+			}
+			else
+			{
+				Cache[Index].tag = Tag;
+				Cache[Index].data[i1]=data_w;
+			}
+		}
+		if(MEM_WRITE==2)
+		{
+			memory[address] = data_w & ((1 << 8) - 1);
+			memory[address + 1] = data_w >> 8;
+			if(Cache[Index].validBit==0)
+			{
+				Cache[Index].validBit=1;
+				Cache[Index].tag = Tag;
+				Cache[Index].data[i1]=data_w;
+				Cache[Index].data[i2]=memory[address+1];
+				Cache[Index].data[i3]=memory[address+2];
+				Cache[Index].data[i4]=memory[address+3];
+			}
+			else
+			{
+				Cache[Index].tag = Tag;
+				Cache[Index].data[i1]=memory[address];
+				Cache[Index].data[i2]=memory[address+1];
+			}	
+		}
+		if(MEM_WRITE==3)
+		{
+			int setb8 = (1 << 8) - 1;
+			memory[address] = data_w & setb8;
+			memory[address + 1] = (data_w & (setb8 << 8)) >> 8;
+			memory[address + 2] = (data_w & (setb8 << 16)) >> 16;
+			memory[address + 3] = data_w >> 24;
+			if(Cache[Index].validBit==0)
+			{
+				Cache[Index].validBit=1;
+				Cache[Index].tag = Tag;
+				Cache[Index].data[i1]=data_w & setb8;
+				Cache[Index].data[i2]=(data_w & (setb8 << 8)) >> 8;
+				Cache[Index].data[i3]=(data_w & (setb8 << 16)) >> 16;
+				Cache[Index].data[i4]=data_w >> 24;
+			}
+			else
+			{
+				Cache[Index].tag = Tag;
+				Cache[Index].data[i1]=data_w & setb8;
+				Cache[Index].data[i2]=(data_w & (setb8 << 8)) >> 8;
+				Cache[Index].data[i3]=(data_w & (setb8 << 16)) >> 16;
+				Cache[Index].data[i4]=data_w >> 24;
+			}		
+		}
+	}
+	return 0;
+}
 //Call in decode stage & Writeback Stage
 void readWriteRegFile(int RF_WRITE, int addressA, int addressB, int addressC)
 {
@@ -117,7 +258,7 @@ lli iag(int INC_SELECT, int PC_SELECT, lli immediate = 0)
 //Stage 1: Fetch Stage
 void fetch()
 {
-	IR = readWriteMemory(3, 0, PC);
+	IR = readWriteCache(3, 0, PC);
 	returnAddress = iag(0, 1);
 }
 //end of fetch
@@ -283,8 +424,10 @@ void decode()
 	else if (opcode == OPCODE_S1) //store
 	{
 
-		int imm1 = IR << 20;
-		imm1 >>= 27;
+		int tmp = (1 << 5) - 1;
+		tmp <<= 7;
+		int imm1 = IR & tmp;
+		imm1 >>= 7;
 		int imm2 = IR >> 25;
 		immediate = imm1 + (imm2 << 5);
 
@@ -446,10 +589,17 @@ void decode()
 
 		RF_WRITE = 0;
 		B_SELECT = 0;
-		if (funct3 == 5 || funct3 == 7) //bge,bgeu
+		if (funct3 == 5) //bge
 			ALU_OP = 3;
-		else if (funct3 == 4 || funct3 == 6) //blt,bltu
+		else if(funct3 == 7){	//bgeu
+			ALU_OP = 34;
+		}
+		else if (funct3 == 4) //blt
 			ALU_OP = 4;
+
+		else if(funct3 == 6){	//bltu
+		ALU_OP = 35;
+		}
 		else if (funct3 == 0) //beq
 			ALU_OP = 2;
 		else if (funct3 == 1) //bne Update task2.cpp
@@ -497,6 +647,26 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 	else if (ALU_OP == 3) //bge
 	{
 		if (InA >= InB)
+		{
+			INC_SELECT = 1;
+			PC -= 4;
+			iag(INC_SELECT, 1, immediate);
+		}
+	}
+
+	//bgeu
+	else if(ALU_OP == 34){
+		if((unsigned) InA >= (unsigned) InB)
+		{
+			INC_SELECT = 1;
+			PC -= 4;
+			iag(INC_SELECT, 1, immediate);
+		}
+	}
+
+	//bltu
+	else if(ALU_OP == 35){
+		if ((unsigned) InA < (unsigned) InB)
 		{
 			INC_SELECT = 1;
 			PC -= 4;
@@ -581,7 +751,7 @@ void alu(int ALU_OP, int B_SELECT, int immediate = 0)
 Input: Y_SELECT, MEM_READ, MEM_WRITE, address from RZ/RM, data */
 void memoryStage(int Y_SELECT, int MEM_READ, int MEM_WRITE, int address = 0, int data = 0)
 {
-	int dataFromMem = readWriteMemory(MEM_READ, MEM_WRITE, address, data);
+	int dataFromMem = readWriteCache(MEM_READ, MEM_WRITE, address, data);
 	if (Y_SELECT == 0)
 		RY = RZ;
 	if (Y_SELECT == 1)
@@ -598,6 +768,7 @@ void writeBack(int RF_WRITE, int addressC)
 }
 //End of writeBack
 
+//Update memory with data & instructions
 //Update memory with data & instructions
 void updateMemory()
 {
@@ -627,34 +798,35 @@ void updateMemory()
 		while (i < machineLine.length() && machineLine[i] != ' ')
 			type += machineLine[i++];
 		if (type == "byte")
-			readWriteMemory(0, 1, address, value);
+			readWriteCache(0, 1, address, value);
 		else if (type == "halfword")
-			readWriteMemory(0, 2, address, value);
+			readWriteCache(0, 2, address, value);
 		else if (type == "word")
-			readWriteMemory(0, 3, address, value);
+			readWriteCache(0, 3, address, value);
 		else if (type == "doubleword")
-			readWriteMemory(0, 4, address, value);
+			readWriteCache(0, 4, address, value);
 	}
 	fileReading.close();
 
 	fileReading.open("machineCode.mc");
+	lli address = 0;
 	while (getline(fileReading, machineLine))
 	{
-		lli value = 0, address = 0;
+		lli value = 0;
 
 		int i = 2; //initially : 0x
-		while (machineLine[i] != ' ')
-			address = address * 16 + hexadecimal[machineLine[i++]];
+				   //        while (machineLine[i] != ' ')
+				   //            address = address * 16 + hexadecimal[machineLine[i++]];
 
-		i += 3; //between : 0x
+		//        i += 3; //between : 0x
 		while (i < machineLine.length())
 			value = value * 16 + hexadecimal[machineLine[i++]];
 
-		readWriteMemory(0, 3, address, value);
+		readWriteCache(0, 3, address, value);
+		address += 4;
 	}
 	fileReading.close();
 }
-//End of updateMemory
 
 //Prints memory that has been alloted with data or instruction!
 void printMemory()
@@ -762,6 +934,9 @@ void runCode()
 //main function
 int main()
 {
+	memoryAccesses=0;
+	conflictMisses=0;
+	coldMisses=0;
 	//initialize x2, x3
 	regArray[2] = 0xFFFFFF;
 	regArray[3] = 0x100000;
@@ -769,15 +944,8 @@ int main()
 	updateMemory(); //Update memory with data & instructions
 	runCode();
 	printRegisterFile();
+	cout<<"Number of cold misses: "<<coldMisses<<endl;
+	cout<<"Number of conflict misses: "<<conflictMisses<<endl;
 	cout << "Number of Cycles = " << cycleCount << endl;
 }
 //End of main
-/********************************for task3*********************
-bool detectDataHazard()
-{
-    if((buffer_ID_EX.addressB!=0) && (buffer_ID_EX.addressA!=0) && (buffer_EX_MEM.addressC!=0) && ((buffer_EX_MEM.addressC==buffer_ID_EX.addressA)||(buffer_EX_MEM.addressC==buffer_ID_EX.addressB)))
-        return true;
-    if((buffer_ID_EX.addressB!=0) && (buffer_ID_EX.addressA!=0) && (buffer_MEM_WB.addressC!=0) && ((buffer_MEM_WB.addressC==buffer_ID_EX.addressB)||(buffer_MEM_WB.addressC==buffer_ID_EX.addressB)))
-        return true;
-    return false;
-}*.*/
