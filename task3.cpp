@@ -18,7 +18,7 @@ struct Buffer_IF_ID{
         PC = 0;
         IR = 0;
         en = 0;
-        en2 = 0;
+        en2 = 1;
     }
 };
 
@@ -40,7 +40,9 @@ struct Buffer_ID_EX{
     bool en, en2;
     Buffer_ID_EX(){
         en = 0;
-        en2 = 0;
+        en2 = 1;
+        branchTaken=FALSE;
+        isBranchInstruction=FALSE;
     }
 };
 
@@ -72,7 +74,7 @@ struct Buffer_MEM_WB{
     bool en, en2;
     Buffer_MEM_WB(){
         en = 0;
-        en2 = 0;
+        en2 = 1;
     }
 };
 
@@ -142,7 +144,7 @@ int PC_of_stalledStageMtoM=INT_MAX;
 unsigned char memory[1 << 24]; //Processor Memory
 int regArray[32] = {0};
 int cycleCount = 0;
-
+int prevPC=-1;
 //Call in decode stage & Writeback Stage
 void readWriteRegFile(int stage)
 {
@@ -274,10 +276,11 @@ void decode()
     Y_SELECT = 0;
 
     if (opcode == OPCODE_I1)
-    {
-        stats_count.ITypeInstructions++;
-        stats_count.dataTransferInstructions++;
-        
+    {   
+        if(prevPC != buffer_IF_ID.PC){
+            stats_count.ITypeInstructions++;
+            stats_count.dataTransferInstructions++;
+        }
         RF_WRITE = 1;
         int imm = IR >> 20;
         unsigned int rs1 = IR << 12;
@@ -303,9 +306,10 @@ void decode()
 
     else if (opcode == OPCODE_I2)
     {
-        stats_count.ITypeInstructions++;
-        stats_count.aluInstructions++;
-        
+        if(prevPC != buffer_IF_ID.PC){
+            stats_count.ITypeInstructions++;
+            stats_count.aluInstructions++;
+        }
         RF_WRITE = 1;
         int imm = IR >> 20;
         unsigned int rs1 = IR << 12;
@@ -371,8 +375,10 @@ void decode()
 
     else if (opcode == OPCODE_I3)
     {
-        stats_count.ITypeInstructions++;
-        stats_count.aluInstructions++;
+        if(prevPC != buffer_IF_ID.PC){
+            stats_count.ITypeInstructions++;
+            stats_count.aluInstructions++;
+        }
         
         RF_WRITE = 1;
         addressA = IR << 12;
@@ -410,9 +416,10 @@ void decode()
 
     else if (opcode == OPCODE_I4)
     { //for jalr
-        stats_count.ITypeInstructions++;
-        stats_count.controlInstructions;
-        
+        if(prevPC != buffer_IF_ID.PC){
+            stats_count.ITypeInstructions++;
+            stats_count.controlInstructions;
+        }
         RF_WRITE = 1;
         int imm = IR >> 20;
         unsigned int rs1 = IR << 12;
@@ -442,9 +449,10 @@ void decode()
 
     else if (opcode == OPCODE_S1) //store
     {
-        stats_count.STypeInstructions++;
-        stats_count.dataTransferInstructions++;
-
+        if(prevPC != buffer_IF_ID.PC){
+            stats_count.STypeInstructions++;
+            stats_count.dataTransferInstructions++;
+        }
         int tmp = (1 << 5) - 1;
         tmp <<= 7;
         int imm1 = IR & tmp;
@@ -473,9 +481,10 @@ void decode()
 
     else if (opcode == OPCODE_U1) //auipc
     {
-        stats_count.UTypeInstructions++;
-        stats_count.aluInstructions++;
-        
+        if(prevPC != buffer_IF_ID.PC){
+            stats_count.UTypeInstructions++;
+            stats_count.aluInstructions++;
+        }
         immediate = IR >> 12;
 
         addressC = IR << 20;
@@ -490,9 +499,10 @@ void decode()
 
     else if (opcode == OPCODE_U2) //lui
     {
-        stats_count.UTypeInstructions++;
-        stats_count.aluInstructions++;
-        
+        if(prevPC != buffer_IF_ID.PC){
+            stats_count.UTypeInstructions++;
+            stats_count.aluInstructions++;
+        }
         immediate = IR >> 12;
 
         addressC = IR << 20;
@@ -506,9 +516,10 @@ void decode()
 
     else if (opcode == OPCODE_R1 || opcode == OPCODE_R2)
     {
-        stats_count.RTypeInstructions++;
-        stats_count.aluInstructions++;
-        
+        if(prevPC != buffer_IF_ID.PC){
+            stats_count.RTypeInstructions++;
+            stats_count.aluInstructions++;
+        }
         unsigned int rs1 = IR << 12;
         rs1 >>= 27;
         unsigned int rs2 = IR << 7;
@@ -578,9 +589,10 @@ void decode()
 
     else if (opcode == OPCODE_UJ)
     { //jal
-        stats_count.UJTypeInstructions++;
-        stats_count.controlInstructions++;
-        
+        if(prevPC != buffer_IF_ID.PC){
+            stats_count.UJTypeInstructions++;
+            stats_count.controlInstructions++;
+        }
         unsigned int rd = IR << 20;
         rd >>= 27;
         addressC = rd;
@@ -609,13 +621,16 @@ void decode()
         returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
         buffer_ID_EX.isBranchInstruction = TRUE;
         buffer_ID_EX.branchTaken = TRUE;
+
+        //buffer_IF_ID.PC=buffer_ID_EX.PC+4;
     }
 
     else if (opcode == OPCODE_SB1)
     {
-        stats_count.SBTypeInstructions++;
-        stats_count.controlInstructions++;
-        
+        if(prevPC != buffer_IF_ID.PC){
+            stats_count.SBTypeInstructions++;
+            stats_count.controlInstructions++;
+        }
         unsigned int rs1 = IR << 12;
         rs1 >>= 27;
         unsigned int rs2 = IR << 7;
@@ -706,7 +721,8 @@ void decode()
         MEM_WRITE = 0;
     }
   //  cout<<addressA<<' '<<addressB<<' '<<addressC<<' '<<immediate<<endl;
-    buffer_ID_EX.PC = buffer_IF_ID.PC;
+    if(buffer_ID_EX.isBranchInstruction==FALSE || buffer_ID_EX.branchTaken==FALSE)
+        buffer_ID_EX.PC = buffer_IF_ID.PC;
     buffer_ID_EX.addressC = addressC;
     buffer_ID_EX.immediate = immediate;
     buffer_ID_EX.ALU_OP = ALU_OP;
@@ -720,7 +736,7 @@ void decode()
     buffer_ID_EX.addressA = addressA;
     buffer_ID_EX.addressB = addressB;
     buffer_ID_EX.returnAddress = returnAddress;
-    
+    prevPC= buffer_IF_ID.PC;
     readWriteRegFile(DECODE_STAGE);
 }
 //End of decode
@@ -1202,7 +1218,7 @@ void runCode()
     switch ((int)knob4)
     {
     case OFF:
-    {
+    {  
         while (1)
         {
             if (memory[buffer_IF_ID.PC] == 0 && memory[buffer_IF_ID.PC + 1] == 0 && memory[buffer_IF_ID.PC + 2] == 0 && memory[buffer_IF_ID.PC + 3] == 0)
@@ -1223,15 +1239,15 @@ void runCode()
                 alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
             }
             else buffer_EX_MEM.en2=0;
-
-            if(buffer_MEM_WB.en2==0 || (PC_of_stalledStageEtoE==INT_MAX && PC_of_stalledStageMtoE==INT_MAX) || (buffer_EX_MEM.en2==0 && PC_of_stalledStageEtoE==INT_MAX))
+            
+            if(buffer_IF_ID.en2==1)
             {
                 buffer_ID_EX.en2=1;
                 decode();
-                PC_of_stalledStageEtoE= INT_MAX;
             }
-            else buffer_ID_EX.en2=0;
+            else buffer_ID_EX.en2=0; 
 
+            
             int dataDependencyEtoE= stall_check_EtoE();
             int dataDependencyMtoE= stall_check_MtoE();
             if(buffer_MEM_WB.en2==0 && buffer_EX_MEM.en2==0)
@@ -1240,11 +1256,26 @@ void runCode()
             }
             if(buffer_EX_MEM.en2==0)
                 PC_of_stalledStageMtoE = INT_MAX;
+
                             
             if(PC_of_stalledStageEtoE == INT_MAX && PC_of_stalledStageMtoE == INT_MAX)
+            {
+                buffer_IF_ID.en2=1;
                 fetch(en);
+            }
+            else stats_count.stalls_data_hazard++;
+            
+            if(buffer_ID_EX.isBranchInstruction==TRUE && buffer_ID_EX.branchTaken==TRUE)
+            {
+                cout<<buffer_ID_EX.PC<<" ^^^^^^^^^^^^^"<<buffer_IF_ID.PC<<endl;
+                buffer_IF_ID.PC=buffer_ID_EX.PC+4;
+                buffer_IF_ID.en2=0;
+                buffer_ID_EX.isBranchInstruction=FALSE; 
+                buffer_ID_EX.branchTaken=FALSE;
+                stats_count.stalls_control_hazard++;
+            }
             cout<<en<<" "<<buffer_IF_ID.en<<" "<<buffer_ID_EX.en<<" "<<buffer_EX_MEM.en<<" "<<buffer_MEM_WB.en<<endl;
-            cycleCount++;
+            stats_count.cycleCount++;
             if(en == 0 && buffer_IF_ID.en == 0 && buffer_ID_EX.en == 0 && buffer_EX_MEM.en == 0 && buffer_MEM_WB.en == 0) break;
             
         }
