@@ -150,10 +150,10 @@ void readWriteRegFile(int stage)
         }
     }
     if(stage == DECODE_STAGE){
-        if(!buffer_ID_EX.RF_WRITE){
-            buffer_ID_EX.RA = regArray[buffer_ID_EX.addressA];
-            buffer_ID_EX.RB = regArray[buffer_ID_EX.addressB];
-        }
+            if(buffer_ID_EX.addressA<32)
+                buffer_ID_EX.RA = regArray[buffer_ID_EX.addressA];
+            if(buffer_ID_EX.addressB<32)
+                buffer_ID_EX.RB = regArray[buffer_ID_EX.addressB];
     }
 }
 //End of readWriteRegFile
@@ -994,24 +994,28 @@ int MtoE(bool knob2)
     {
             if(knob2)
                 buffer_ID_EX.RA = buffer_ID_EX.RB = buffer_MEM_WB.RY;
-            else
+            else{
                 PC_of_stalledStageMtoE = buffer_ID_EX.PC;
+            }
             return DATA_DEPEND_RA_RB;
     }    
+
     if(buffer_ID_EX.addressA == buffer_MEM_WB.addressC)
-    {
+    {     
             if(knob2)
                 buffer_ID_EX.RA = buffer_MEM_WB.RY;
-            else
-                PC_of_stalledStageMtoE = buffer_ID_EX.PC;
+            else{
+                    PC_of_stalledStageMtoE = buffer_ID_EX.PC;
+            }
             return DATA_DEPEND_RA;
     }
     if(buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
     {
             if(knob2)
                 buffer_ID_EX.RB = buffer_MEM_WB.RY;
-            else
+            else{
                 PC_of_stalledStageMtoE = buffer_ID_EX.PC;
+            }
             return DATA_DEPEND_RB;
     }
     return NO_DATA_DEPEND;
@@ -1065,24 +1069,24 @@ void runCode()
         {
             if (memory[buffer_IF_ID.PC] == 0 && memory[buffer_IF_ID.PC + 1] == 0 && memory[buffer_IF_ID.PC + 2] == 0 && memory[buffer_IF_ID.PC + 3] == 0)
                 en = 0;
-            if(buffer_MEM_WB.en2==1 && PC_of_stalledStageEtoE > buffer_MEM_WB.PC)
+            if(buffer_MEM_WB.en2==1 && PC_of_stalledStageEtoE > buffer_MEM_WB.PC && PC_of_stalledStageMtoE > buffer_MEM_WB.PC)
                 writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
 
-            if(buffer_EX_MEM.en2==1 && PC_of_stalledStageEtoE > buffer_EX_MEM.PC)
+            if(buffer_EX_MEM.en2==1 && PC_of_stalledStageEtoE > buffer_EX_MEM.PC && PC_of_stalledStageMtoE > buffer_EX_MEM.PC)
             {  
                buffer_MEM_WB.en2=1;
                 memoryStage(buffer_EX_MEM.Y_SELECT, buffer_EX_MEM.MEM_READ, buffer_EX_MEM.MEM_WRITE, buffer_EX_MEM.RZ, buffer_EX_MEM.RB);
             }
             else  buffer_MEM_WB.en2=0;
 
-            if(buffer_ID_EX.en2==1 && PC_of_stalledStageEtoE > buffer_ID_EX.PC)
+            if(buffer_ID_EX.en2==1 && PC_of_stalledStageEtoE > buffer_ID_EX.PC && PC_of_stalledStageMtoE > buffer_ID_EX.PC)
             {
                 buffer_EX_MEM.en2=1;
                 alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
             }
             else buffer_EX_MEM.en2=0;
 
-            if(buffer_MEM_WB.en2==0 || PC_of_stalledStageEtoE==INT_MAX)
+            if(buffer_MEM_WB.en2==0 || (PC_of_stalledStageEtoE==INT_MAX && PC_of_stalledStageMtoE==INT_MAX) || (buffer_EX_MEM.en2==0 && PC_of_stalledStageEtoE==INT_MAX))
             {
                 buffer_ID_EX.en2=1;
                 decode();
@@ -1091,10 +1095,15 @@ void runCode()
             else buffer_ID_EX.en2=0;
 
             int dataDependencyEtoE= EtoE(knob2);
+            int dataDependencyMtoE= MtoE(knob2);
             if(buffer_MEM_WB.en2==0 && buffer_EX_MEM.en2==0)
+            {
                 PC_of_stalledStageEtoE = INT_MAX;
+            }
+            if(buffer_EX_MEM.en2==0)
+                PC_of_stalledStageMtoE = INT_MAX;
                             
-            if(PC_of_stalledStageEtoE == INT_MAX)
+            if(PC_of_stalledStageEtoE == INT_MAX && PC_of_stalledStageMtoE == INT_MAX)
                 fetch(en);
             cout<<en<<" "<<buffer_IF_ID.en<<" "<<buffer_ID_EX.en<<" "<<buffer_EX_MEM.en<<" "<<buffer_MEM_WB.en<<endl;
             cycleCount++;
