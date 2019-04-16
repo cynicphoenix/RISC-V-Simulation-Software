@@ -1008,7 +1008,7 @@ int forward_dependency_MtoE(bool knob2)
 //End of forward_dependency_MtoE()
 
 //Check data dependency Memory to Memory
-int MtoM(bool knob2)
+int forward_dependency_MtoM(bool knob2)
 {
     if(buffer_MEM_WB.addressC == 0)
         return NO_DATA_DEPEND;
@@ -1021,10 +1021,10 @@ int MtoM(bool knob2)
     }
     return NO_DATA_DEPEND;
 }
-//End of MtoM()
+//End of forward_dependency_MtoM()
 
 //Check data stalling Execute to Execute
-int EtoE(bool knob2)
+int stall_check_EtoE()
 {
     if(buffer_EX_MEM.addressC == 0)
         return NO_DATA_DEPEND;
@@ -1046,10 +1046,10 @@ int EtoE(bool knob2)
     }
     return NO_DATA_DEPEND;
 }
-//End of EtoE()
+//End of stall_check_EtoE()
 
 //Check data stalling Memory to Execute
-int MtoE(bool knob2)
+int stall_check_MtoE()
 {
     if(buffer_MEM_WB.addressC == 0)
         return NO_DATA_DEPEND;
@@ -1072,22 +1072,7 @@ int MtoE(bool knob2)
     }
     return NO_DATA_DEPEND;
 }
-//End of MtoE()
-
-//Check data dependency Memory to Memory
-int MtoM(bool knob2)
-{
-    if(buffer_MEM_WB.addressC == 0)
-        return NO_DATA_DEPEND;
-
-    if(buffer_EX_MEM.addressC == buffer_MEM_WB.addressC)
-    {
-        PC_of_stalledStageMtoM = buffer_EX_MEM.PC;
-        return DATA_DEPENED_MtoM;
-    }
-    return NO_DATA_DEPEND;
-}
-//End of MtoM()
+//End of stall_check_MtoE()
 
 bool isbranchinstruction()
 {
@@ -1099,6 +1084,7 @@ bool isbranchinstruction()
     }
     return false;
 }
+
 //Run Instructions: unpipelined
 void runCode()
 {
@@ -1143,8 +1129,8 @@ void runCode()
             }
             else buffer_ID_EX.en2=0;
 
-            int dataDependencyEtoE= EtoE(knob2);
-            int dataDependencyMtoE= MtoE(knob2);
+            int dataDependencyEtoE= stall_check_EtoE();
+            int dataDependencyMtoE= stall_check_MtoE();
             if(buffer_MEM_WB.en2==0 && buffer_EX_MEM.en2==0)
             {
                 PC_of_stalledStageEtoE = INT_MAX;
