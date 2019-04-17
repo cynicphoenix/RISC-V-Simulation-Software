@@ -41,8 +41,8 @@ struct Buffer_ID_EX{
     Buffer_ID_EX(){
         en = 0;
         en2 = 1;
-        branchTaken=FALSE;
-        isBranchInstruction=FALSE;
+        branchTaken = FALSE;
+        isBranchInstruction = FALSE;
     }
 };
 
@@ -138,13 +138,14 @@ Stats_Count stats_count;
 #define DATA_DEPEND_RA_RB 3
 #define DATA_DEPENED_MtoM 4
 
-int PC_of_stalledStageEtoE=INT_MAX;
-int PC_of_stalledStageMtoE=INT_MAX;
-int PC_of_stalledStageMtoM=INT_MAX;
+int PC_of_stalledStageEtoE = INT_MAX;
+int PC_of_stalledStageMtoE = INT_MAX;
+int PC_of_stalledStageMtoM = INT_MAX;
 unsigned char memory[1 << 24]; //Processor Memory
 int regArray[32] = {0};
 int cycleCount = 0;
-int prevPC=-1;
+int prevPC = -1;
+
 //Call in decode stage & Writeback Stage
 void readWriteRegFile(int stage)
 {
@@ -153,7 +154,7 @@ void readWriteRegFile(int stage)
         {
             if (buffer_MEM_WB.addressC)
                 regArray[buffer_MEM_WB.addressC] = buffer_MEM_WB.RY;
-            cout<<regArray[buffer_MEM_WB.addressC]<<endl;
+            //cout<<regArray[buffer_MEM_WB.addressC]<<endl;
             return;
         }
     }
@@ -242,7 +243,7 @@ void fetch(bool en)
     }
 
     buffer_IF_ID.IR = readWriteMemory(3, 0, buffer_IF_ID.PC);
-    cout << buffer_IF_ID.PC << endl;
+    //cout << buffer_IF_ID.PC << endl;
     buffer_IF_ID.PC = iag(FETCH_STAGE);
     // cout << hex << buffer_IF_ID.IR <<" "<<buffer_IF_ID.PC << dec << endl;
     
@@ -930,7 +931,7 @@ void memoryStage(int Y_SELECT, int MEM_READ, int MEM_WRITE, int address = 0, int
     buffer_EX_MEM.en = buffer_ID_EX.en;
     if (buffer_EX_MEM.en == 0)
         return;
-    cout << hex << "dsd " << buffer_EX_MEM.PC << dec << endl;
+    //cout << hex << "dsd " << buffer_EX_MEM.PC << dec << endl;
     int returnAddress = buffer_EX_MEM.returnAddress;
     int RY;
     
@@ -954,7 +955,7 @@ void memoryStage(int Y_SELECT, int MEM_READ, int MEM_WRITE, int address = 0, int
 void writeBack(int RF_WRITE, int addressC)
 {
     buffer_MEM_WB.en = buffer_EX_MEM.en;
-    cout << hex << "decode " << buffer_MEM_WB.PC<< dec << endl;
+    //cout << hex << "decode " << buffer_MEM_WB.PC<< dec << endl;
     if (buffer_MEM_WB.en == 0)
         return;
     readWriteRegFile(WB_STAGE);
@@ -1021,26 +1022,6 @@ void updateMemory()
 }
 //End of updateMemory
 
-//Prints memory that has been alloted with data or instruction!
-void printMemory()
-{
-    cout << "----------------Memory--------------------" << endl;
-    for (int i = 0; i < 1 << 22; i++)
-        if (memory[i] != '\0')
-            cout << i << "\t" << (int)memory[i] << endl;
-    cout << "-------------------------------------------" << endl;
-}
-//End of printMemory
-
-//Prints all register file & their value
-void printRegisterFile()
-{
-    cout << "-------------Register File-----------------" << endl;
-    for (int i = 0; i < 32; i++)
-        cout << "REGISTER x" << i << "\t" << regArray[i] << endl;
-    cout << "-------------------------------------------" << endl;
-}
-//Check data dependency Execute to Execute
 int forward_dependency_EtoE(bool knob2)
 {
     if(buffer_EX_MEM.addressC == 0)
@@ -1201,26 +1182,89 @@ void stats_print()
 }
 //End of stats_print()
 
-//Run Instructions: unpipelined
+//Prints all register file & their value
+void printRegisterFile()
+{  
+    fstream fileWriting;
+    fileWriting.open("regFile.txt", ios::app);
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    fileWriting<<"CYCLE NUMBER\t\t:\t"<<stats_count.cycleCount<<endl;
+    for (int i = 0; i < 10; i++)
+        fileWriting << "REGISTER x" << i << "\t\t\t:\t" << regArray[i] << endl;
+    for (int i = 10; i < 32; i++)
+        fileWriting << "REGISTER x" << i << "\t\t:\t" << regArray[i] << endl;
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    fileWriting.close();
+}
+//Check data dependency Execute to Execute
+
+//Prints memory that has been alloted with data or instruction!
+void printMemory()
+{
+    fstream fileWriting;
+    fileWriting.open("memory.txt", ios::out);
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    for (int i = 0; i < 1 << 22; i++)
+        if (memory[i] != '\0')
+            fileWriting << i << "\t" << (int)memory[i] << endl;
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    fileWriting.close();
+}
+//End of printMemory
+
+//Prints pipeline registers data
+void printPipelineRegisters()
+{
+    fstream fileWriting;
+    fileWriting.open("pipelineRegisters.txt", ios::app);
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    fileWriting<<"Cycle\t:\t"<<stats_count.cycleCount<<endl;
+    fileWriting<<"RA\t\t:\t"<<buffer_ID_EX.RA<<endl;
+    fileWriting<<"RB\t\t:\t"<<buffer_ID_EX.RB<<endl;
+    fileWriting<<"RZ\t\t:\t"<<buffer_EX_MEM.RZ<<endl;
+    fileWriting<<"RY\t\t:\t"<<buffer_MEM_WB.RY<<endl;
+    fileWriting<<"----------------------------------------------------------------------"<<endl;
+    fileWriting.close();
+}
+//End of printpipelineRegisters
+
+//Run Instructions: pipelined
 void runCode()
 {
-    bool knob1 = ON; //Enable-disable pipeling
-    bool knob2 = OFF; //Enable-disable data forwarding
-    bool knob3 = OFF; //Print Register File after every cycle
-    bool knob4 = OFF; //Print Data in pipeline register along with cycle number
-    bool knob5 = OFF; //Print data of particular instruction with cycle number
+    bool knob1; //Enable-disable pipeling
+    bool knob2; //Enable-disable data forwarding
+    bool knob3; //Print Register File after every cycle
+    bool knob4; //Print Data in pipeline register along with cycle number
+    bool knob5 ; //Print data of particular instruction with cycle number
     bool en = 1;
-    cout << "-------------------------------------------" << endl;
-    cout << "Press 0 : Run Whole Program" << endl;
-    cout << "Press 1 : Run Step by Step" << endl;
-    cin >> knob4;
-    cout << "-------------------------------------------" << endl;
-    switch ((int)knob4)
-    {
-    case OFF:
-    {  
+    int instruction_number; //for knob5
+    cout<<"----------------------------------------------------------------------"<<endl;
+    cout<<"Press 0 : Turn OFF the KNOB"<<endl<<"Press 1 : Turn ON the KNOB"<<endl;
+    cout<<"----------------------------------------------------------------------"<<endl;
+    cout<<"Knob 1 (Pipeline Knob)                  :  ";
+    cin>>knob1;
+    cout<<"Knob 2 (Data Forwarding Knob)           :  ";
+    cin>>knob2;
+    cout<<"Knob 3 (Register File Knob)             :  ";
+    cin>>knob3;
+    cout<<"Knob 4 (Pipeline Register Knob)         :  ";
+    cin>>knob4;
+    cout<<"Knob 5 (Instruction Knob)               :  ";
+    cin>>knob5;
+    if(knob5 == ON){
+        cout<<"Instruction Number                      :  ";
+        cin>>instruction_number;
+        instruction_number = instruction_number<<2;
+    }
+    cout<<"----------------------------------------------------------------------"<<endl;
+
+    if(knob1 == ON){ 
         while (1)
-        {
+        {          
+            stats_count.cycleCount++;
+            if(knob3 == ON)
+                printRegisterFile();
+
             if (memory[buffer_IF_ID.PC] == 0 && memory[buffer_IF_ID.PC + 1] == 0 && memory[buffer_IF_ID.PC + 2] == 0 && memory[buffer_IF_ID.PC + 3] == 0)
                 en = 0;
             if(buffer_MEM_WB.en2==1 && PC_of_stalledStageEtoE > buffer_MEM_WB.PC && PC_of_stalledStageMtoE > buffer_MEM_WB.PC)
@@ -1263,103 +1307,64 @@ void runCode()
                 buffer_IF_ID.en2=1;
                 fetch(en);
             }
-            else stats_count.stalls_data_hazard++;
+            else
+                stats_count.stalls_data_hazard++;
             
             if(buffer_ID_EX.isBranchInstruction==TRUE && buffer_ID_EX.branchTaken==TRUE)
             {
-                cout<<buffer_ID_EX.PC<<" ^^^^^^^^^^^^^"<<buffer_IF_ID.PC<<endl;
                 buffer_IF_ID.PC=buffer_ID_EX.PC+4;
                 buffer_IF_ID.en2=0;
                 buffer_ID_EX.isBranchInstruction=FALSE; 
                 buffer_ID_EX.branchTaken=FALSE;
                 stats_count.stalls_control_hazard++;
             }
-            cout<<en<<" "<<buffer_IF_ID.en<<" "<<buffer_ID_EX.en<<" "<<buffer_EX_MEM.en<<" "<<buffer_MEM_WB.en<<endl;
-            stats_count.cycleCount++;
-            if(en == 0 && buffer_IF_ID.en == 0 && buffer_ID_EX.en == 0 && buffer_EX_MEM.en == 0 && buffer_MEM_WB.en == 0) break;
-            
-        }
-        break;
-    }
-    case ON:
-    {
 
-        int printinfo = 0;
+            if(knob4 == ON)
+                printPipelineRegisters();
 
-        while (1)
-        {
-            // // cout << hex << buffer_ID_EX.PC  << " " << buffer_EX_MEM.PC   << dec << endl;
-            
-            cout << "Press 0 : Next Cycle" << endl;
-            cout << "Press 1 : Print Register File " << endl;
-            cout << "Press 2 : Print Memory" << endl;
-            cout << "Press 3 : Execute to End" << endl;
-            cin >> printinfo;
-            cout << "-------------------------------------------" << endl;
-
-            if (printinfo == 1)
-            {
-                printRegisterFile();
-                continue;
-            }
-            else if (printinfo == 2)
-            {
-                printMemory();
-                continue;
-            }
-            else if (printinfo == 0)
-            {
-                if (memory[buffer_IF_ID.PC] == 0 && memory[buffer_IF_ID.PC + 1] == 0 && memory[buffer_IF_ID.PC + 2] == 0 && memory[buffer_IF_ID.PC + 3] == 0)
-                    en = 0;
-                writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
-                memoryStage(buffer_EX_MEM.Y_SELECT, buffer_EX_MEM.MEM_READ, buffer_EX_MEM.MEM_WRITE, buffer_EX_MEM.RZ, buffer_EX_MEM.RB);
-                alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
-                decode();
-                fetch(en);
-                cout << en << " " << buffer_IF_ID.PC << " " << buffer_ID_EX.PC << " " << buffer_EX_MEM.PC << " " << buffer_MEM_WB.en << endl;
-                if (en == 0 && buffer_IF_ID.en == 0 && buffer_ID_EX.en == 0 && buffer_EX_MEM.en == 0 && buffer_MEM_WB.en == 0)
-                    break;
-                cycleCount++;
-            }
-            else if (printinfo == 3)
-            {
-                while (1)
-                {
-                    if (memory[buffer_IF_ID.PC] == 0 && memory[buffer_IF_ID.PC + 1] == 0 && memory[buffer_IF_ID.PC + 2] == 0 && memory[buffer_IF_ID.PC + 3] == 0)
-                        en = 0;
-                    writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
-                    memoryStage(buffer_EX_MEM.Y_SELECT, buffer_EX_MEM.MEM_READ, buffer_EX_MEM.MEM_WRITE, buffer_EX_MEM.RZ, buffer_EX_MEM.RB);
-                    alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
-                    decode();
-                    fetch(en);
-                    cout << en << " " << buffer_IF_ID.en << " " << buffer_ID_EX.en << " " << buffer_EX_MEM.en << " " << buffer_MEM_WB.en << endl;
-                    if (en == 0 && buffer_IF_ID.en == 0 && buffer_ID_EX.en == 0 && buffer_EX_MEM.en == 0 && buffer_MEM_WB.en == 0)
-                        break;
-                    cycleCount++;
+            if(knob5 == ON){
+                if(buffer_ID_EX.PC == instruction_number){
+                    cout<<"Cycle Number\t:\t"<<stats_count.cycleCount<<endl;
+                    cout<<"RA\t\t:\t"<<buffer_ID_EX.RA<<endl;
+                    cout<<"RB\t\t:\t"<<buffer_ID_EX.RB<<endl;
                 }
-                break;
+                if(buffer_EX_MEM.PC == instruction_number){
+                    cout<<"Cycle Number\t:\t"<<stats_count.cycleCount<<endl;
+                    cout<<"RZ\t\t:\t"<<buffer_EX_MEM.RZ<<endl;
+                }
+                if(buffer_MEM_WB.PC == instruction_number){
+                    cout<<"Cycle Number\t:\t"<<stats_count.cycleCount<<endl;
+                    cout<<"RY\t\t:\t"<<buffer_MEM_WB.RY<<endl;
+                }
             }
-            
 
+            if(en == 0 && buffer_IF_ID.en == 0 && buffer_ID_EX.en == 0 && buffer_EX_MEM.en == 0 && buffer_MEM_WB.en == 0)
+                break;       
         }
-        break;
     }
-    default:
-        cout << "Wrong choice" << endl;
+    if(knob3 == OFF){
+         printRegisterFile();
     }
+    cout<<"----------------------------------------------------------------------"<<endl;
 }
 //End of runCode
 
 //main function
 int main()
 {
-    //initialize x2, x3
-    regArray[2] = 0xFFFFFF;
+    regArray[2] = 0xFFFFFF; //initialize x2, x3
     regArray[3] = 0x100000;
+
+    fstream fileWriting; //To clear data of existing regFile.txt
+    fileWriting.open("regFile.txt", ios::out);
+    fileWriting.close();
+
+    fileWriting.open("pipelineRegisters.txt", ios::out); //To clear data of existing pipelineRegisters.txt
+    fileWriting.close();
 
     updateMemory(); //Update memory with data & instructions
     runCode();
-    printRegisterFile();
     stats_print();
+    printMemory();
 }
 //End of main
