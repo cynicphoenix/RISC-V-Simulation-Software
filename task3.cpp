@@ -166,14 +166,15 @@ int readWriteMemory(int MEM_READ, int MEM_WRITE, int address = 0, int data_w = 0
 //Print stats in stats.txt file
 void stats_print()
 {
-    stats_count.total_instructions = stats_count.aluInstructions + stats_count.controlInstructions + stats_count.dataTransferInstructions;
+    stats_count.total_instructions = stats_count.aluInstructions + stats_count.controlInstructions + stats_count.dataTransferInstructions ;
     stats_count.stalls = stats_count.stalls_control_hazard + stats_count.stalls_data_hazard;
+	stats_count.total_instructions -=1;
     stats_count.CPI = (double)stats_count.cycleCount/(double)stats_count.total_instructions;
     fstream fileWriting;
     fileWriting.open("stats.txt", ios::out);
     fileWriting<<"----------------------------------------------------------------------"<<endl;
     fileWriting<<"Total Cycles               :  "<<stats_count.cycleCount<<endl;
-    fileWriting<<"Total Instructions         :  "<<stats_count.total_instructions<<endl;
+    fileWriting<<"Total Instructions         :  "<<stats_count.total_instructions <<endl;
     fileWriting<<"CPI                        :  "<<stats_count.CPI<<endl;
     fileWriting<<"----------------------------------------------------------------------"<<endl;
     fileWriting<<"R Type                     :  "<<stats_count.RTypeInstructions<<endl;
@@ -184,7 +185,7 @@ void stats_print()
     fileWriting<<"UJ Type                    :  "<<stats_count.UJTypeInstructions<<endl;
     fileWriting<<"----------------------------------------------------------------------"<<endl;
     fileWriting<<"Data-Transfer Instructions :  "<<stats_count.dataTransferInstructions<<endl;
-    fileWriting<<"ALU Instruction            :  "<<stats_count.aluInstructions<<endl;
+    fileWriting<<"ALU Instruction            :  "<<stats_count.aluInstructions - 1<<endl;
     fileWriting<<"Control Instructions       :  "<<stats_count.controlInstructions<<endl;
     fileWriting<<"----------------------------------------------------------------------"<<endl;
     fileWriting<<"Data Hazards               :  "<<stats_count.data_hazard<<endl;
@@ -1052,7 +1053,7 @@ public:
 	    { //for jalr
 	        if(prevPC != buffer_IF_ID.PC){
 	            stats_count.ITypeInstructions++;
-	            stats_count.controlInstructions;
+	            stats_count.controlInstructions++;
 	        }
 	        RF_WRITE = 1;
 	        int imm = IR >> 20;
@@ -2184,7 +2185,7 @@ public:
         else if (opcode == OPCODE_I4)
         { //for jalr
             stats_count.ITypeInstructions++;
-            stats_count.controlInstructions;
+            stats_count.controlInstructions++;
         RF_WRITE = 1;
             int imm = IR >> 20;
             unsigned int rs1 = IR << 12;
@@ -2754,16 +2755,16 @@ void updateMemory()
     fileReading.close();
 
     fileReading.open("machineCode.mc");
-    lli address = 0;
+    lli address1 = 0;
     while (getline(fileReading, machineLine))
     {
-        lli value = 0;
+        lli value = 0, address = 0;
 
         int i = 2; //initially : 0x
-//        while (machineLine[i] != ' ')
-//            address = address * 16 + hexadecimal[machineLine[i++]];
+       while (machineLine[i] != ' ')
+           address = address * 16 + hexadecimal[machineLine[i++]];
 
-//        i += 3; //between : 0x
+       i += 3; //between : 0x
         while (i < machineLine.length())
             value = value * 16 + hexadecimal[machineLine[i++]];
         if(cacheType==1)
@@ -2774,8 +2775,17 @@ void updateMemory()
             readWriteSACache(SACache1,n,m,0,3,address,value);
         else
             readWriteMemory(0, 3, address, value);
-        address+=4;
+        address1+=4;
     }
+	lli value = 0x00000033;
+	if (cacheType == 1)
+		readWriteDMCache(DMCache1, n, m, 0, 3, address1, value);
+	if (cacheType == 2)
+		readWriteFACache(FACache1, n, m, 0, 3, address1, value);
+	if (cacheType == 3)
+		readWriteSACache(SACache1, n, m, 0, 3, address1, value);
+	else
+		readWriteMemory(0, 3, address1, value);
     fileReading.close();
 }
 //End of updateMemory
@@ -2807,7 +2817,8 @@ int main()
         unpipelined execute_unpipeline;
         execute_unpipeline.runCode();
     }
-
+	--stats_count.cycleCount;
+	--stats_count.RTypeInstructions;
     stats_print();
     printMemory();
 }
