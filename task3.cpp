@@ -714,7 +714,8 @@ void decode()
                 iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
             }
         }
-        
+        if(buffer_ID_EX.branchTaken == TRUE)
+            stats_count.branch_mispredictions++;
         addressA = rs1;
         addressB = rs2;
         addressC = 0;
@@ -1021,7 +1022,7 @@ void updateMemory()
     fileReading.close();
 }
 //End of updateMemory
-
+int prevDependency=-1;
 int forward_dependency_EtoE(bool knob2)
 {
     if(buffer_EX_MEM.addressC == 0)
@@ -1029,18 +1030,35 @@ int forward_dependency_EtoE(bool knob2)
 
      if(buffer_ID_EX.addressA == buffer_EX_MEM.addressC && buffer_ID_EX.addressB == buffer_EX_MEM.addressC)
     {
-        if(knob2)
-            buffer_ID_EX.RA = buffer_ID_EX.RB = buffer_EX_MEM.RZ;
+        if(prevDependency!=buffer_ID_EX.PC)
+        {   
+            stats_count.data_hazard++;
+            prevDependency=buffer_ID_EX.PC;
+        }
+        if(knob2){
+            buffer_ID_EX.RA = buffer_EX_MEM.RZ;
+            buffer_ID_EX.RB = buffer_EX_MEM.RZ;
+        }
         return DATA_DEPEND_RA_RB;
     }    
     if(buffer_ID_EX.addressA == buffer_EX_MEM.addressC)
     {
+        if(prevDependency!=buffer_ID_EX.PC)
+        {   
+            stats_count.data_hazard++;
+            prevDependency=buffer_ID_EX.PC;
+        }
         if(knob2)
             buffer_ID_EX.RA = buffer_EX_MEM.RZ;
         return DATA_DEPEND_RA;
     }
     if(buffer_ID_EX.addressB == buffer_EX_MEM.addressC)
     {
+        if(prevDependency!=buffer_ID_EX.PC)
+        {   
+            stats_count.data_hazard++;
+            prevDependency=buffer_ID_EX.PC;
+        }
         if(knob2)
             buffer_ID_EX.RB = buffer_EX_MEM.RZ;
         return DATA_DEPEND_RB;
@@ -1052,24 +1070,42 @@ int forward_dependency_EtoE(bool knob2)
 //Check forward dependency Memory to Execute
 int forward_dependency_MtoE(bool knob2)
 {
+    //cout<<buffer_MEM_WB.addressC<<" ^^^^^^^"<<buffer_ID_EX.addressA<<" ^^^^^"<<buffer_ID_EX.addressB<<endl;
     if(buffer_MEM_WB.addressC == 0)
         return NO_DATA_DEPEND;
 
      if(buffer_ID_EX.addressA == buffer_MEM_WB.addressC && buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
     {
-        if(knob2)
-            buffer_ID_EX.RA = buffer_ID_EX.RB = buffer_MEM_WB.RY;
+        if(prevDependency!=buffer_ID_EX.PC)
+        {   
+            stats_count.data_hazard++;
+            prevDependency=buffer_ID_EX.PC;
+        }
+        if(knob2){
+            buffer_ID_EX.RA = buffer_MEM_WB.RY;
+            buffer_ID_EX.RB = buffer_MEM_WB.RY;
+        }
         return DATA_DEPEND_RA_RB;
     }    
 
     if(buffer_ID_EX.addressA == buffer_MEM_WB.addressC)
     {     
+        if(prevDependency!=buffer_ID_EX.PC)
+        {   
+            stats_count.data_hazard++;
+            prevDependency=buffer_ID_EX.PC;
+        }
         if(knob2)
             buffer_ID_EX.RA = buffer_MEM_WB.RY;
         return DATA_DEPEND_RA;
     }
     if(buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
     {
+        if(prevDependency!=buffer_ID_EX.PC)
+        {   
+            stats_count.data_hazard++;
+            prevDependency=buffer_ID_EX.PC;
+        }
         if(knob2)
             buffer_ID_EX.RB = buffer_MEM_WB.RY;
         return DATA_DEPEND_RB;
@@ -1086,6 +1122,11 @@ int forward_dependency_MtoM(bool knob2)
 
     if(buffer_EX_MEM.addressC == buffer_MEM_WB.addressC)
     {
+        if(prevDependency!=buffer_EX_MEM.PC && buffer_EX_MEM.PC!=buffer_MEM_WB.PC)
+        {   
+            stats_count.data_hazard++;
+            prevDependency=buffer_EX_MEM.PC;
+        }
         if(knob2)
             buffer_EX_MEM.RZ = buffer_MEM_WB.RY;
         return DATA_DEPENED_MtoM;
@@ -1280,57 +1321,98 @@ void runCode()
 
             if (memory[buffer_IF_ID.PC] == 0 && memory[buffer_IF_ID.PC + 1] == 0 && memory[buffer_IF_ID.PC + 2] == 0 && memory[buffer_IF_ID.PC + 3] == 0)
                 en = 0;
-            if(buffer_MEM_WB.en2==1 && PC_of_stalledStageEtoE > buffer_MEM_WB.PC && PC_of_stalledStageMtoE > buffer_MEM_WB.PC)
-                writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
-
-            if(buffer_EX_MEM.en2==1 && PC_of_stalledStageEtoE > buffer_EX_MEM.PC && PC_of_stalledStageMtoE > buffer_EX_MEM.PC)
-            {  
-               buffer_MEM_WB.en2=1;
-                memoryStage(buffer_EX_MEM.Y_SELECT, buffer_EX_MEM.MEM_READ, buffer_EX_MEM.MEM_WRITE, buffer_EX_MEM.RZ, buffer_EX_MEM.RB);
-            }
-            else  buffer_MEM_WB.en2=0;
-
-            if(buffer_ID_EX.en2==1 && PC_of_stalledStageEtoE > buffer_ID_EX.PC && PC_of_stalledStageMtoE > buffer_ID_EX.PC)
-            {
-                buffer_EX_MEM.en2=1;
-                alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
-            }
-            else buffer_EX_MEM.en2=0;
             
-            if(buffer_IF_ID.en2==1)
+            if(knob2==0)
             {
-                buffer_ID_EX.en2=1;
-                decode();
-            }
-            else buffer_ID_EX.en2=0; 
+                if(buffer_MEM_WB.en2==1 && PC_of_stalledStageEtoE > buffer_MEM_WB.PC && PC_of_stalledStageMtoE > buffer_MEM_WB.PC)
+                    writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
 
-            
-            int dataDependencyEtoE= stall_check_EtoE();
-            int dataDependencyMtoE= stall_check_MtoE();
-            if(buffer_MEM_WB.en2==0 && buffer_EX_MEM.en2==0)
-            {
-                PC_of_stalledStageEtoE = INT_MAX;
-            }
-            if(buffer_EX_MEM.en2==0)
-                PC_of_stalledStageMtoE = INT_MAX;
+                if(buffer_EX_MEM.en2==1 && PC_of_stalledStageEtoE > buffer_EX_MEM.PC && PC_of_stalledStageMtoE > buffer_EX_MEM.PC)
+                {  
+                    buffer_MEM_WB.en2=1;
+                    memoryStage(buffer_EX_MEM.Y_SELECT, buffer_EX_MEM.MEM_READ, buffer_EX_MEM.MEM_WRITE, buffer_EX_MEM.RZ, buffer_EX_MEM.RB);
+                }
+                else  buffer_MEM_WB.en2=0;
 
-                            
-            if(PC_of_stalledStageEtoE == INT_MAX && PC_of_stalledStageMtoE == INT_MAX)
+                if(buffer_ID_EX.en2==1 && PC_of_stalledStageEtoE > buffer_ID_EX.PC && PC_of_stalledStageMtoE > buffer_ID_EX.PC)
+                {
+                    buffer_EX_MEM.en2=1;
+                    alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
+                }
+                else buffer_EX_MEM.en2=0;
+                
+                if(buffer_IF_ID.en2==1)
+                {
+                    buffer_ID_EX.en2=1;
+                    decode();
+                }
+                else buffer_ID_EX.en2=0; 
+
+                
+                int dataDependencyEtoE= stall_check_EtoE();
+                int dataDependencyMtoE= stall_check_MtoE();
+                if(buffer_MEM_WB.en2==0 && buffer_EX_MEM.en2==0)
+                {
+                    PC_of_stalledStageEtoE = INT_MAX;
+                }
+                if(buffer_EX_MEM.en2==0)
+                    PC_of_stalledStageMtoE = INT_MAX;
+
+                                
+                if(PC_of_stalledStageEtoE == INT_MAX && PC_of_stalledStageMtoE == INT_MAX)
+                {
+                    buffer_IF_ID.en2=1;
+                    fetch(en);
+                }
+                else
+                    stats_count.stalls_data_hazard++;
+
+                
+                if(buffer_ID_EX.isBranchInstruction==TRUE && buffer_ID_EX.branchTaken==TRUE)
+                {
+                    buffer_IF_ID.PC=buffer_ID_EX.PC+4;
+                    buffer_IF_ID.en2=0;
+                    buffer_ID_EX.isBranchInstruction=FALSE; 
+                    buffer_ID_EX.branchTaken=FALSE;
+                    stats_count.stalls_control_hazard++;
+                }
+            }
+            else if(knob2==1)
             {
-                buffer_IF_ID.en2=1;
+                if(buffer_MEM_WB.en2==1)
+                    writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
+
+                forward_dependency_MtoM(knob2);
+                forward_dependency_EtoE(knob2);
+                forward_dependency_MtoE(knob2);
+
+                if(buffer_EX_MEM.en2==1){
+                    memoryStage(buffer_EX_MEM.Y_SELECT, buffer_EX_MEM.MEM_READ, buffer_EX_MEM.MEM_WRITE, buffer_EX_MEM.RZ, buffer_EX_MEM.RB);
+                    buffer_MEM_WB.en2=1;
+                } else buffer_MEM_WB.en2=0;
+
+                if(buffer_ID_EX.en2==1){
+                    alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
+                    buffer_EX_MEM.en2=1;
+                } else buffer_EX_MEM.en2=0;
+
+                if(buffer_IF_ID.en2==1)
+                {
+                    decode();
+                    buffer_ID_EX.en2=1;
+                }   else buffer_ID_EX.en2=0;
+
                 fetch(en);
-            }
-            else
-                stats_count.stalls_data_hazard++;
+                buffer_IF_ID.en2=1;
 
-            
-            if(buffer_ID_EX.isBranchInstruction==TRUE && buffer_ID_EX.branchTaken==TRUE)
-            {
-                buffer_IF_ID.PC=buffer_ID_EX.PC+4;
-                buffer_IF_ID.en2=0;
-                buffer_ID_EX.isBranchInstruction=FALSE; 
-                buffer_ID_EX.branchTaken=FALSE;
-                stats_count.stalls_control_hazard++;
+                if(buffer_ID_EX.isBranchInstruction==TRUE && buffer_ID_EX.branchTaken==TRUE)
+                {
+                    buffer_IF_ID.PC=buffer_ID_EX.PC+4;
+                    buffer_IF_ID.en2=0;
+                    buffer_ID_EX.isBranchInstruction=FALSE; 
+                    buffer_ID_EX.branchTaken=FALSE;
+                    stats_count.stalls_control_hazard++;
+                }
             }
 
             if(knob4 == ON)
