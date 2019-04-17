@@ -1102,16 +1102,22 @@ int stall_check_EtoE()
 
      if(buffer_ID_EX.addressA == buffer_EX_MEM.addressC && buffer_ID_EX.addressB == buffer_EX_MEM.addressC)
     {
+        if(PC_of_stalledStageEtoE != buffer_ID_EX.PC)
+            stats_count.data_hazard++;
         PC_of_stalledStageEtoE = buffer_ID_EX.PC;
         return DATA_DEPEND_RA_RB;
     }    
     if(buffer_ID_EX.addressA == buffer_EX_MEM.addressC)
     {
+        if(PC_of_stalledStageEtoE != buffer_ID_EX.PC)
+            stats_count.data_hazard++;
         PC_of_stalledStageEtoE = buffer_ID_EX.PC;
         return DATA_DEPEND_RA;
     }
     if(buffer_ID_EX.addressB == buffer_EX_MEM.addressC)
     {
+        if(PC_of_stalledStageEtoE != buffer_ID_EX.PC)
+            stats_count.data_hazard++;
         PC_of_stalledStageEtoE = buffer_ID_EX.PC;
         return DATA_DEPEND_RB;
     }
@@ -1126,18 +1132,24 @@ int stall_check_MtoE()
         return NO_DATA_DEPEND;
 
      if(buffer_ID_EX.addressA == buffer_MEM_WB.addressC && buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
-    {
+    {   
+        if(PC_of_stalledStageEtoE != buffer_ID_EX.PC)
+            stats_count.data_hazard++;
         PC_of_stalledStageMtoE = buffer_ID_EX.PC;
         return DATA_DEPEND_RA_RB;
     }    
 
     if(buffer_ID_EX.addressA == buffer_MEM_WB.addressC)
     {     
+        if(PC_of_stalledStageEtoE != buffer_ID_EX.PC)
+            stats_count.data_hazard++;
         PC_of_stalledStageMtoE = buffer_ID_EX.PC;    
         return DATA_DEPEND_RA;
     }
     if(buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
     {
+        if(PC_of_stalledStageEtoE != buffer_ID_EX.PC)
+            stats_count.data_hazard++;
         PC_of_stalledStageMtoE = buffer_ID_EX.PC;
         return DATA_DEPEND_RB;
     }
@@ -1151,6 +1163,7 @@ void stats_print()
     stats_count.total_instructions = stats_count.aluInstructions + stats_count.controlInstructions + stats_count.dataTransferInstructions;
     stats_count.stalls = stats_count.stalls_control_hazard + stats_count.stalls_data_hazard;
     stats_count.CPI = (double)stats_count.cycleCount/(double)stats_count.total_instructions;
+    stats_count.control_hazard = stats_count.controlInstructions;
     fstream fileWriting;
     fileWriting.open("stats.txt", ios::out);
     fileWriting<<"----------------------------------------------------------------------"<<endl;
@@ -1309,6 +1322,7 @@ void runCode()
             }
             else
                 stats_count.stalls_data_hazard++;
+
             
             if(buffer_ID_EX.isBranchInstruction==TRUE && buffer_ID_EX.branchTaken==TRUE)
             {
