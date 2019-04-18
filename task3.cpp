@@ -438,6 +438,8 @@ int readWriteSACache(saCache** SACache, int n, int m, int k/*k-way*/, int MEM_RE
 
 }
 
+int isLoadInstruction=0;
+int isPrevLoadInstruction=0;
 int readWriteFACache(faCache* FACache, int n/*num_blocks=2^n*/, int m/*block_size=2^m words*/, int MEM_READ, int MEM_WRITE, int address=0, int data_w=0)
 {
 	int x = 1<<(m+2);
@@ -909,9 +911,10 @@ public:
 	    PC_SELECT = 1;
 	    INC_SELECT = 0;
 	    Y_SELECT = 0;
-
+	    isLoadInstruction=0;
 	    if (opcode == OPCODE_I1)
 	    {   
+	    	isLoadInstruction=1;
 	        if(prevPC != buffer_IF_ID.PC){
 	            stats_count.ITypeInstructions++;
 	            stats_count.dataTransferInstructions++;
@@ -1356,6 +1359,9 @@ public:
 	        MEM_READ = 0;
 	        MEM_WRITE = 0;
 	    }
+	    if(addressA<0) addressA+=32;
+	    if(addressB<0) addressB+=32;
+	    if(addressC<0) addressC+=32;
 	  //  cout<<addressA<<' '<<addressB<<' '<<addressC<<' '<<immediate<<endl;
 	    if(buffer_ID_EX.isBranchInstruction==FALSE || buffer_ID_EX.branchTaken==FALSE)
 	        buffer_ID_EX.PC = buffer_IF_ID.PC;
@@ -1830,7 +1836,8 @@ public:
 	        instruction_number = instruction_number<<2;
 	    }
 	    cout<<"----------------------------------------------------------------------"<<endl;
-
+	    int tmp3=-1;
+	    int tmp2=0;
         while (1)
         {          
             stats_count.cycleCount++;
@@ -1898,33 +1905,59 @@ public:
             }
             else if(knob2==1)
             {
+                int tmp=-1;
+      			
                 if(buffer_MEM_WB.en2==1)
-                    writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
-
+                    {
+                    	//cout<<buffer_IF_ID.PC<<
+                    	//cout<<"TY ";
+                    	tmp2=0;
+                    	writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
+                    }else tmp2=1;
                 forward_dependency_MtoE(knob2);
                 forward_dependency_MtoM(knob2);
 
-                forward_dependency_EtoE(knob2);
-             
+                tmp=forward_dependency_EtoE(knob2);
 
                 if(buffer_EX_MEM.en2==1){
+                	//cout<<"HI ";cout<<buffer_EX_MEM.RZ<<" "<<buffer_MEM_WB.RY<<" "<<buffer_ID_EX.Y_SELECT<<" "<<buffer_EX_MEM.Y_SELECT<<"^";
                     memoryStage(buffer_EX_MEM.Y_SELECT, buffer_EX_MEM.MEM_READ, buffer_EX_MEM.MEM_WRITE, buffer_EX_MEM.RZ, buffer_EX_MEM.RB);
                     buffer_MEM_WB.en2=1;
+                    //cout<<buffer_EX_MEM.Y_SELECT<<" "<<buffer_MEM_WB.RY<<" 	";
+
                 } else buffer_MEM_WB.en2=0;
-              
-       
+
+              	if(tmp!=NO_DATA_DEPEND && isPrevLoadInstruction==1 ) 
+              		{	//cout<<"$ "<<endl;
+              			buffer_EX_MEM.en2=0;
+              			isPrevLoadInstruction=0;
+              			tmp3=1;
+              			tmp2=1;
+              			stats_count.stalls_data_hazard++;
+              			continue;
+       				}
+
                 if(buffer_ID_EX.en2==1){
+                	//cout<<"HI2 ";
+					if(tmp3==1){
+                    	buffer_ID_EX.RA=buffer_MEM_WB.RY;
+                    //	cout<<"** "<<buffer_MEM_WB.RY<<" "<<buffer_ID_EX.RB<<" ";
+                    	tmp3=0;
+                    }
                     alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
                     buffer_EX_MEM.en2=1;
                 } else buffer_EX_MEM.en2=0;
 
+                isPrevLoadInstruction=isLoadInstruction;
+
                 if(buffer_IF_ID.en2==1)
                 {
+                	//cout<<"HI3 ";
                     decode();
                     buffer_ID_EX.en2=1;
                 }   else buffer_ID_EX.en2=0;
-
                 fetch(en);
+                //cout<<"HI4 ";
                 buffer_IF_ID.en2=1;
 
                 if(buffer_ID_EX.isBranchInstruction==TRUE && buffer_ID_EX.branchTaken==TRUE)
@@ -1936,6 +1969,7 @@ public:
                     buffer_ID_EX.branchTaken=FALSE;
                     stats_count.stalls_control_hazard++;
                 }
+                cout<<endl;
             }
 
             if(knob4 == ON)
@@ -2755,16 +2789,16 @@ void updateMemory()
     fileReading.close();
 
     fileReading.open("machineCode.mc");
-    lli address1 = 0;
+    lli address = 0;
     while (getline(fileReading, machineLine))
     {
-        lli value = 0, address = 0;
+        lli value = 0;
 
         int i = 2; //initially : 0x
-       while (machineLine[i] != ' ')
-           address = address * 16 + hexadecimal[machineLine[i++]];
+     //  while (machineLine[i] != ' ')
+      //     address = address * 16 + hexadecimal[machineLine[i++]];
 
-       i += 3; //between : 0x
+     //  i += 3; //between : 0x
         while (i < machineLine.length())
             value = value * 16 + hexadecimal[machineLine[i++]];
         if(cacheType==1)
@@ -2775,17 +2809,17 @@ void updateMemory()
             readWriteSACache(SACache1,n,m,0,3,address,value);
         else
             readWriteMemory(0, 3, address, value);
-        address1+=4;
+        address+=4;
     }
 	lli value = 0x00000033;
 	if (cacheType == 1)
-		readWriteDMCache(DMCache1, n, m, 0, 3, address1, value);
+		readWriteDMCache(DMCache1, n, m, 0, 3, address, value);
 	if (cacheType == 2)
-		readWriteFACache(FACache1, n, m, 0, 3, address1, value);
+		readWriteFACache(FACache1, n, m, 0, 3, address, value);
 	if (cacheType == 3)
-		readWriteSACache(SACache1, n, m, 0, 3, address1, value);
+		readWriteSACache(SACache1, n, m, 0, 3, address, value);
 	else
-		readWriteMemory(0, 3, address1, value);
+		readWriteMemory(0, 3, address, value);
     fileReading.close();
 }
 //End of updateMemory
