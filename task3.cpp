@@ -168,6 +168,7 @@ void stats_print()
 {
     stats_count.total_instructions = stats_count.aluInstructions + stats_count.controlInstructions + stats_count.dataTransferInstructions ;
     stats_count.stalls = stats_count.stalls_control_hazard + stats_count.stalls_data_hazard;
+    stats_count.control_hazard = stats_count.controlInstructions;
 	stats_count.total_instructions -=1;
     stats_count.CPI = (double)stats_count.cycleCount/(double)stats_count.total_instructions;
     fstream fileWriting;
@@ -850,7 +851,7 @@ public:
         if(stage == EXECUTE_STAGE){                   //call from alu
             lli PC_Temp = buffer_ID_EX.PC + 4;
             if (PC_SELECT == 0)
-                buffer_ID_EX.PC = buffer_EX_MEM.RZ;
+                buffer_ID_EX.PC = buffer_ID_EX.RZ;
             else
             {
                 if (INC_SELECT == 1)
@@ -1078,11 +1079,12 @@ public:
 	        int InA = regArray[rs1];
 	        int InB = immediate;
 	        buffer_ID_EX.RZ = InA + InB;
-	        buffer_EX_MEM.RZ = buffer_ID_EX.RZ;
+	       // buffer_EX_MEM.RZ = buffer_ID_EX.RZ;
 	        //buffer_ID_EX.PC -= 4;
-	        buffer_ID_EX.returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+	        returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
 	        buffer_ID_EX.isBranchInstruction = TRUE;
 	        buffer_ID_EX.branchTaken = TRUE;
+	        //cout<<"))))))))))))) "<<buffer_ID_EX.returnAddress<<endl;
 	    }
 
 	    else if (opcode == OPCODE_S1) //store
@@ -1259,7 +1261,6 @@ public:
 	        returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
 	        buffer_ID_EX.isBranchInstruction = TRUE;
 	        buffer_ID_EX.branchTaken = TRUE;
-
 	        //buffer_IF_ID.PC=buffer_ID_EX.PC+4;
 	    }
 
@@ -1313,7 +1314,7 @@ public:
 	        else if (funct3 == 4)
 	        { //blt
 	            ALU_OP = 4;
-	            if ((unsigned)InA < (unsigned)InB)
+	            if (InA < InB)
 	            {
 	                buffer_ID_EX.branchTaken = TRUE;
 	               // buffer_ID_EX.PC -= 4;
@@ -1849,6 +1850,7 @@ public:
             
             if(knob2==0)
             {
+            	//cout<<" ^^^^^^^"<<buffer_IF_ID.PC<<" ^^^^^^^"<<endl;
                 if(buffer_MEM_WB.en2==1 && PC_of_stalledStageEtoE > buffer_MEM_WB.PC && PC_of_stalledStageMtoE > buffer_MEM_WB.PC)
                     writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
 
@@ -1905,19 +1907,17 @@ public:
             }
             else if(knob2==1)
             {
-                int tmp=-1;
       			
                 if(buffer_MEM_WB.en2==1)
                     {
                     	//cout<<buffer_IF_ID.PC<<
                     	//cout<<"TY ";
-                    	tmp2=0;
                     	writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
-                    }else tmp2=1;
+                    }
                 forward_dependency_MtoE(knob2);
                 forward_dependency_MtoM(knob2);
 
-                tmp=forward_dependency_EtoE(knob2);
+                forward_dependency_EtoE(knob2);
 
                 if(buffer_EX_MEM.en2==1){
                 	//cout<<"HI ";cout<<buffer_EX_MEM.RZ<<" "<<buffer_MEM_WB.RY<<" "<<buffer_ID_EX.Y_SELECT<<" "<<buffer_EX_MEM.Y_SELECT<<"^";
@@ -1927,28 +1927,14 @@ public:
 
                 } else buffer_MEM_WB.en2=0;
 
-              	if(tmp!=NO_DATA_DEPEND && isPrevLoadInstruction==1 ) 
-              		{	//cout<<"$ "<<endl;
-              			buffer_EX_MEM.en2=0;
-              			isPrevLoadInstruction=0;
-              			tmp3=1;
-              			tmp2=1;
-              			stats_count.stalls_data_hazard++;
-              			continue;
-       				}
-
+              	
                 if(buffer_ID_EX.en2==1){
                 	//cout<<"HI2 ";
-					if(tmp3==1){
-                    	buffer_ID_EX.RA=buffer_MEM_WB.RY;
-                    //	cout<<"** "<<buffer_MEM_WB.RY<<" "<<buffer_ID_EX.RB<<" ";
-                    	tmp3=0;
-                    }
                     alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
                     buffer_EX_MEM.en2=1;
                 } else buffer_EX_MEM.en2=0;
 
-                isPrevLoadInstruction=isLoadInstruction;
+               // isPrevLoadInstruction=isLoadInstruction;
 
                 if(buffer_IF_ID.en2==1)
                 {
