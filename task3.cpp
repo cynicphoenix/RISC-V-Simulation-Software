@@ -72,9 +72,8 @@ struct saCache
 	}
 };
 
-int n;
-int m;
-int k;
+bool knob1, knob2, knob3, knob4, knob5;
+int n, m, k;
 
 dmCache* DMCache1;//instruction cache
 dmCache* DMCache2;//data cache
@@ -94,29 +93,50 @@ unsigned char memory[1 << 24]; //Processor Memory
 int regArray[32] = {0};
 int cycleCount = 0;
 
-struct Stats_Count{
-    unsigned int aluInstructions = 0;
-    unsigned int controlInstructions = 0;
-    unsigned int dataTransferInstructions = 0;
+struct Stats_Count
+{
+	unsigned int aluInstructions;
+	unsigned int controlInstructions;
+	unsigned int dataTransferInstructions;
 
-    unsigned int RTypeInstructions = 0;
-    unsigned int ITypeInstructions = 0;
-    unsigned int STypeInstructions = 0;
-    unsigned int SBTypeInstructions = 0;
-    unsigned int UJTypeInstructions = 0;
-    unsigned int UTypeInstructions = 0;
+	unsigned int RTypeInstructions;
+	unsigned int ITypeInstructions;
+	unsigned int STypeInstructions;
+	unsigned int SBTypeInstructions;
+	unsigned int UJTypeInstructions;
+	unsigned int UTypeInstructions;
 
-    unsigned int stalls = 0;
-    unsigned int stalls_data_hazard = 0;
-    unsigned int stalls_control_hazard = 0;
+	unsigned int stalls;
+	unsigned int stalls_data_hazard;
+	unsigned int stalls_control_hazard;
 
-    unsigned int data_hazard = 0;
-    unsigned int control_hazard = 0;
-    unsigned int branch_mispredictions = 0;
+	unsigned int data_hazard;
+	unsigned int control_hazard;
+	unsigned int branch_mispredictions;
 
-    unsigned int cycleCount = 0;
-    unsigned int total_instructions = 0;
-    double CPI = 0;
+	unsigned int cycleCount;
+	unsigned int total_instructions;
+	double CPI = 0;
+	Stats_Count()
+	{
+		aluInstructions = 0;
+		controlInstructions = 0;
+		dataTransferInstructions = 0;
+		RTypeInstructions = 0;
+		ITypeInstructions = 0;
+		STypeInstructions = 0;
+		SBTypeInstructions = 0;
+		UJTypeInstructions = 0;
+		UTypeInstructions = 0;
+		stalls = 0;
+		stalls_data_hazard = 0;
+		stalls_control_hazard = 0;
+		data_hazard = 0;
+		control_hazard = 0;
+		branch_mispredictions = 0;
+		cycleCount = 0;
+		total_instructions = 0;
+	}
 };
 Stats_Count stats_count;
 
@@ -169,7 +189,6 @@ void stats_print()
     stats_count.total_instructions = stats_count.aluInstructions + stats_count.controlInstructions + stats_count.dataTransferInstructions ;
     stats_count.stalls = stats_count.stalls_control_hazard + stats_count.stalls_data_hazard;
     stats_count.control_hazard = stats_count.controlInstructions;
-	stats_count.total_instructions -=1;
     stats_count.CPI = (double)stats_count.cycleCount/(double)stats_count.total_instructions;
     fstream fileWriting;
     fileWriting.open("stats.txt", ios::out);
@@ -186,7 +205,7 @@ void stats_print()
     fileWriting<<"UJ Type                    :  "<<stats_count.UJTypeInstructions<<endl;
     fileWriting<<"----------------------------------------------------------------------"<<endl;
     fileWriting<<"Data-Transfer Instructions :  "<<stats_count.dataTransferInstructions<<endl;
-    fileWriting<<"ALU Instruction            :  "<<stats_count.aluInstructions - 1<<endl;
+    fileWriting<<"ALU Instruction            :  "<<stats_count.aluInstructions<<endl;
     fileWriting<<"Control Instructions       :  "<<stats_count.controlInstructions<<endl;
     fileWriting<<"----------------------------------------------------------------------"<<endl;
     fileWriting<<"Data Hazards               :  "<<stats_count.data_hazard<<endl;
@@ -210,7 +229,7 @@ void printRegisterFile()
     fileWriting<<"----------------------------------------------------------------------"<<endl;
     fileWriting<<"CYCLE NUMBER\t\t:\t"<<stats_count.cycleCount<<endl;
     for (int i = 0; i < 10; i++)
-        fileWriting << "REGISTER x" << i << "\t\t:\t" << regArray[i] << endl;
+        fileWriting << "REGISTER x" << i << "\t\t\t:\t" << regArray[i] << endl;
     for (int i = 10; i < 32; i++)
         fileWriting << "REGISTER x" << i << "\t\t:\t" << regArray[i] << endl;
     fileWriting<<"----------------------------------------------------------------------"<<endl;
@@ -729,15 +748,10 @@ int readWriteDMCache(dmCache* DMCache, int n/*num_blocks=2^n*/, int m/*block_siz
 			memory[address + 1] = (data_w & (setb8 << 8)) >> 8;
 			memory[address + 2] = (data_w & (setb8 << 16)) >> 16;
 			memory[address + 3] = data_w >> 24;
-//			cout<<"f"<<(int)memory[address]<<' '<<(int)memory[address+1]<<' '<<(int)memory[address+2]<<' '<<(int)memory[address+3]<<endl;
-			/*for(int i =4;i<(1<<(m+2));i++){
-				DMCache[Index].data[(address+i)%x]=memory[address+i];
-			}*/
 		}
 	}
 	return 0;
 }
-
 
 //pipeline class
 class pipelined{
@@ -770,10 +784,19 @@ public:
         unsigned int returnAddress;
         bool branchTaken;
         bool isBranchInstruction;
+		bool isLoad;
+		bool isStore;
+		bool isALU;
+		bool isJAL_JALR;
+
         bool en, en2;
         Buffer_ID_EX(){
             en = 0;
             en2 = 1;
+			isLoad = FALSE;
+			isStore = FALSE;
+			isALU = FALSE;
+			isJAL_JALR = FALSE;
             branchTaken = FALSE;
             isBranchInstruction = FALSE;
         }
@@ -790,13 +813,25 @@ public:
         int MEM_READ;
         int MEM_WRITE;
         int RF_WRITE;
-        int addressA, addressB;
+		bool branchTaken;
+		bool isBranchInstruction;
+		bool isLoad;
+		bool isStore;
+		bool isALU;
+		bool isJAL_JALR;
+		int addressA, addressB;
         unsigned int returnAddress;
         bool en, en2;
         Buffer_EX_MEM(){
-            en = 0;
+			isLoad = FALSE;
+			isStore = FALSE;
+			isALU = FALSE;
+			isJAL_JALR = FALSE;
+			branchTaken = FALSE;
+			isBranchInstruction = FALSE;
+			en = 0;
             en2 = 1;
-        }
+		}
     };
 
     struct Buffer_MEM_WB{
@@ -805,8 +840,20 @@ public:
         int RF_WRITE;
         int RY;
         bool en, en2;
-        Buffer_MEM_WB(){
-            en = 0;
+		bool branchTaken;
+		bool isBranchInstruction;
+		bool isLoad;
+		bool isStore;
+		bool isALU;
+		bool isJAL_JALR;
+		Buffer_MEM_WB(){
+			isLoad = FALSE;
+			isStore = FALSE;
+			isALU = FALSE;
+			isJAL_JALR = FALSE;
+			branchTaken = FALSE;
+			isBranchInstruction = FALSE;
+			en = 0;
             en2 = 1;
         }
     };
@@ -820,6 +867,8 @@ public:
     int PC_of_stalledStageMtoE = INT_MAX;
     int PC_of_stalledStageMtoM = INT_MAX;
     int prevPC = -1;
+	/*int prevDependency = -1;
+	int lastEtoE = -1;*/
 
 	//Call in decode stage & Writeback Stage
 	void readWriteRegFile(int stage)
@@ -829,7 +878,6 @@ public:
 	        {
 	            if (buffer_MEM_WB.addressC)
 	                regArray[buffer_MEM_WB.addressC] = buffer_MEM_WB.RY;
-	            //cout<<regArray[buffer_MEM_WB.addressC]<<endl;
 	            return;
 	        }
 	    }
@@ -848,7 +896,7 @@ public:
             return buffer_IF_ID.PC + 4;
         }
 
-        if(stage == EXECUTE_STAGE){                   //call from alu
+        if(stage == DECODE_STAGE){                   //call from decode
             lli PC_Temp = buffer_ID_EX.PC + 4;
             if (PC_SELECT == 0)
                 buffer_ID_EX.PC = buffer_ID_EX.RZ;
@@ -861,7 +909,21 @@ public:
             }
             return PC_Temp;
         }
-    }
+		if (stage == EXECUTE_STAGE)
+		{ //call from alu
+			lli PC_Temp = buffer_EX_MEM.PC;
+			if (PC_SELECT == 0)
+				buffer_EX_MEM.PC = buffer_EX_MEM.RZ + 4;
+			else
+			{
+				if (INC_SELECT == 1)
+					buffer_EX_MEM.PC = buffer_EX_MEM.PC + immediate;
+				else
+					buffer_EX_MEM.PC = buffer_EX_MEM.PC + 4;
+			}
+			return PC_Temp;
+		}
+	}
     //End of function iag
 
     //Stage 1: Fetch Stage
@@ -880,9 +942,7 @@ public:
 	        buffer_IF_ID.IR = readWriteSACache(SACache1,n,m,k,3,0,buffer_IF_ID.PC);
 	    else 
 	        buffer_IF_ID.IR = readWriteMemory(3,0,buffer_IF_ID.PC);
-	    //cout << buffer_IF_ID.PC << endl;
 	    buffer_IF_ID.PC = iag(FETCH_STAGE);
-        // cout << hex << buffer_IF_ID.IR <<" "<<buffer_IF_ID.PC << dec << endl;
         
     }
     //End of fetch
@@ -895,7 +955,12 @@ public:
 	        return;
 	    buffer_ID_EX.isBranchInstruction = FALSE;
 	    buffer_ID_EX.branchTaken = FALSE;
-	    int addressA, addressB = 0, addressC;
+		buffer_ID_EX.isALU = FALSE;
+		buffer_ID_EX.isLoad = FALSE;
+		buffer_ID_EX.isStore = FALSE;
+		buffer_ID_EX.isJAL_JALR = FALSE;
+
+		int addressA, addressB = 0, addressC;
 	    int IR = buffer_IF_ID.IR;
 	    unsigned int PC = buffer_IF_ID.PC;
 	    unsigned int returnAddress; //Return Address in case of jal/jalr
@@ -904,6 +969,7 @@ public:
 	    int MEM_WRITE;
 	    int RF_WRITE;
 	    int immediate;              // for immediate values
+
 	    unsigned int opcode = IR << 25;
 	    opcode >>= 25;
 	    unsigned int funct3 = IR << 17;
@@ -914,8 +980,9 @@ public:
 	    Y_SELECT = 0;
 	    isLoadInstruction=0;
 	    if (opcode == OPCODE_I1)
-	    {   
-	    	isLoadInstruction=1;
+	    {
+			buffer_ID_EX.isLoad = TRUE;
+			isLoadInstruction = 1;
 	        if(prevPC != buffer_IF_ID.PC){
 	            stats_count.ITypeInstructions++;
 	            stats_count.dataTransferInstructions++;
@@ -945,7 +1012,8 @@ public:
 
 	    else if (opcode == OPCODE_I2)
 	    {
-	        if(prevPC != buffer_IF_ID.PC){
+			buffer_ID_EX.isALU = TRUE;
+			if(prevPC != buffer_IF_ID.PC){
 	            stats_count.ITypeInstructions++;
 	            stats_count.aluInstructions++;
 	        }
@@ -1014,7 +1082,8 @@ public:
 
 	    else if (opcode == OPCODE_I3)
 	    {
-	        if(prevPC != buffer_IF_ID.PC){
+			buffer_ID_EX.isALU = TRUE;
+			if(prevPC != buffer_IF_ID.PC){
 	            stats_count.ITypeInstructions++;
 	            stats_count.aluInstructions++;
 	        }
@@ -1055,7 +1124,11 @@ public:
 
 	    else if (opcode == OPCODE_I4)
 	    { //for jalr
-	        if(prevPC != buffer_IF_ID.PC){
+			buffer_ID_EX.isBranchInstruction = TRUE;
+			buffer_ID_EX.branchTaken = TRUE;
+			buffer_ID_EX.isJAL_JALR = FALSE;
+
+			if(prevPC != buffer_IF_ID.PC){
 	            stats_count.ITypeInstructions++;
 	            stats_count.controlInstructions++;
 	        }
@@ -1075,21 +1148,19 @@ public:
 	        MEM_READ = 0;
 	        MEM_WRITE = 0;
 
-	        //Execute moved to decode : Control Hazard
-	        int InA = regArray[rs1];
-	        int InB = immediate;
-	        buffer_ID_EX.RZ = InA + InB;
-	       // buffer_EX_MEM.RZ = buffer_ID_EX.RZ;
-	        //buffer_ID_EX.PC -= 4;
-	        returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	        buffer_ID_EX.isBranchInstruction = TRUE;
-	        buffer_ID_EX.branchTaken = TRUE;
-	        //cout<<"))))))))))))) "<<buffer_ID_EX.returnAddress<<endl;
+	        //Execute moved to decode : Control Hazard for stalling
+			if(knob2 == OFF) {
+	        	int InA = regArray[rs1];
+	        	int InB = immediate;
+	        	buffer_ID_EX.RZ = InA + InB;
+	        	returnAddress = iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
+			}
 	    }
 
 	    else if (opcode == OPCODE_S1) //store
 	    {
-	        if(prevPC != buffer_IF_ID.PC){
+			buffer_ID_EX.isStore = TRUE;
+			if(prevPC != buffer_IF_ID.PC){
 	            stats_count.STypeInstructions++;
 	            stats_count.dataTransferInstructions++;
 	        }
@@ -1105,6 +1176,7 @@ public:
 
 	        addressA = IR << 12;
 	        addressA >>= 27;
+
 	        if (funct3 == 0)
 	            MEM_WRITE = 1;
 	        else if (funct3 == 1)
@@ -1121,7 +1193,8 @@ public:
 
 	    else if (opcode == OPCODE_U1) //auipc
 	    {
-	        if(prevPC != buffer_IF_ID.PC){
+			buffer_ID_EX.isALU = TRUE;
+			if(prevPC != buffer_IF_ID.PC){
 	            stats_count.UTypeInstructions++;
 	            stats_count.aluInstructions++;
 	        }
@@ -1139,7 +1212,8 @@ public:
 
 	    else if (opcode == OPCODE_U2) //lui
 	    {
-	        if(prevPC != buffer_IF_ID.PC){
+			buffer_ID_EX.isALU = TRUE;
+			if(prevPC != buffer_IF_ID.PC){
 	            stats_count.UTypeInstructions++;
 	            stats_count.aluInstructions++;
 	        }
@@ -1156,7 +1230,8 @@ public:
 
 	    else if (opcode == OPCODE_R1 || opcode == OPCODE_R2)
 	    {
-	        if(prevPC != buffer_IF_ID.PC){
+			buffer_ID_EX.isALU = TRUE;
+			if(prevPC != buffer_IF_ID.PC){
 	            stats_count.RTypeInstructions++;
 	            stats_count.aluInstructions++;
 	        }
@@ -1228,8 +1303,11 @@ public:
 	    }
 
 	    else if (opcode == OPCODE_UJ)
-	    { //jal
-	        if(prevPC != buffer_IF_ID.PC){
+	    { // jal
+			buffer_ID_EX.isBranchInstruction = TRUE;
+			buffer_ID_EX.branchTaken = TRUE;
+			buffer_ID_EX.isJAL_JALR = FALSE;
+			if(prevPC != buffer_IF_ID.PC){
 	            stats_count.UJTypeInstructions++;
 	            stats_count.controlInstructions++;
 	        }
@@ -1256,16 +1334,15 @@ public:
 	        MEM_WRITE = 0;
 	        Y_SELECT = 2;
 
-	        //buffer_ID_EX.PC -= 4;
-	        PC_SELECT = 1;
-	        returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	        buffer_ID_EX.isBranchInstruction = TRUE;
-	        buffer_ID_EX.branchTaken = TRUE;
-	        //buffer_IF_ID.PC=buffer_ID_EX.PC+4;
+	        if(knob2 == OFF) {
+	        	PC_SELECT = 1;
+	        	returnAddress = iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
+			}
 	    }
 
 	    else if (opcode == OPCODE_SB1)
 	    {
+			buffer_ID_EX.isBranchInstruction = TRUE;
 	        if(prevPC != buffer_IF_ID.PC){
 	            stats_count.SBTypeInstructions++;
 	            stats_count.controlInstructions++;
@@ -1282,78 +1359,75 @@ public:
 	        int bit_5_10 = (funct7 - (bit_12 << 6)) << 4;
 	        immediate = bit_1_4 | bit_5_10 | bit_11 | bit_12;
 	        immediate <<= 1;
-
-	        PC_SELECT = 1;
-	        INC_SELECT = 1;
-	        RF_WRITE = 0;
+			RF_WRITE = 0;
 	        B_SELECT = 0;
-	        buffer_ID_EX.isBranchInstruction = TRUE;
-	        int InA = regArray[rs1];
-	        int InB = regArray[rs2];
 
-	        if (funct3 == 5)
+			int InA = regArray[rs1];
+			int InB = regArray[rs2];
+
+			if (knob2 == OFF)
+			{
+				PC_SELECT = 1;
+				INC_SELECT = 1;
+			}
+
+			// Execute moved to decode for stalling
+			if (funct3 == 5)
 	        { //bge
 	            ALU_OP = 3;
-	            if (InA >= InB)
+	            if (InA >= InB && knob2 == OFF)
 	            {
 	                buffer_ID_EX.branchTaken = TRUE;
-	               // buffer_ID_EX.PC -= 4;
-	                iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+	                iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
 	            }
 	        }
 	        else if (funct3 == 7)
 	        { //bgeu
 	            ALU_OP = 34;
-	            if ((unsigned)InA >= (unsigned)InB)
-	            {
+				if ((unsigned)InA >= (unsigned)InB && knob2 == OFF)
+				{
 	                buffer_ID_EX.branchTaken = TRUE;
-	                //buffer_ID_EX.PC -= 4;
-	                iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+	                iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
 	            }
 	        }
 	        else if (funct3 == 4)
 	        { //blt
 	            ALU_OP = 4;
-	            if (InA < InB)
-	            {
+				if (InA < InB && knob2 == OFF)
+				{
 	                buffer_ID_EX.branchTaken = TRUE;
-	               // buffer_ID_EX.PC -= 4;
-	                iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+	                iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
 	            }
 	        }
 	        else if (funct3 == 6)
 	        { //bltu
 	            ALU_OP = 35;
-	            if ((unsigned)InA < (unsigned)InB)
-	            {
+				if ((unsigned)InA < (unsigned)InB && knob2 == OFF)
+				{
 	                buffer_ID_EX.branchTaken = TRUE;
-	               // buffer_ID_EX.PC -= 4;
-	                iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+	                iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
 	            }
 	        }
 	        else if (funct3 == 0)
 	        { //beq
 	            ALU_OP = 2;
-	            if (InA == InB)
-	            {
+				if (InA == InB && knob2 == OFF)
+				{
 	                buffer_ID_EX.branchTaken = TRUE;
-	               // buffer_ID_EX.PC -= 4;
-	                iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+	                iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
 	            }
 
 	        }
 	        else if (funct3 == 1) //bne
 	        {
 	            ALU_OP = 5;
-	            if (InA != InB)
-	            {
+				if (InA != InB && knob2 == OFF)
+				{
 	                buffer_ID_EX.branchTaken = TRUE;
-	                //buffer_ID_EX.PC -= 4;
-	                iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+	                iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
 	            }
 	        }
-	        if(buffer_ID_EX.branchTaken == TRUE)
-	            stats_count.branch_mispredictions++;
+
 	        addressA = rs1;
 	        addressB = rs2;
 	        addressC = 0;
@@ -1363,11 +1437,15 @@ public:
 	    if(addressA<0) addressA+=32;
 	    if(addressB<0) addressB+=32;
 	    if(addressC<0) addressC+=32;
-	  //  cout<<addressA<<' '<<addressB<<' '<<addressC<<' '<<immediate<<endl;
-	    if(buffer_ID_EX.isBranchInstruction==FALSE || buffer_ID_EX.branchTaken==FALSE)
+
+	    if((buffer_ID_EX.isBranchInstruction == FALSE || buffer_ID_EX.branchTaken == FALSE) && knob2 == OFF)
 	        buffer_ID_EX.PC = buffer_IF_ID.PC;
-	    buffer_ID_EX.addressC = addressC;
-	    buffer_ID_EX.immediate = immediate;
+
+		if(knob2 == ON)
+			buffer_ID_EX.PC = buffer_IF_ID.PC;
+
+		buffer_ID_EX.addressC = addressC;
+		buffer_ID_EX.immediate = immediate;
 	    buffer_ID_EX.ALU_OP = ALU_OP;
 	    buffer_ID_EX.B_SELECT = B_SELECT;
 	    buffer_ID_EX.PC_SELECT = PC_SELECT;
@@ -1380,7 +1458,7 @@ public:
 	    buffer_ID_EX.addressB = addressB;
 	    buffer_ID_EX.returnAddress = returnAddress;
 	    prevPC= buffer_IF_ID.PC;
-	    readWriteRegFile(DECODE_STAGE);
+		readWriteRegFile(DECODE_STAGE);
 	}
 	//End of decode
 
@@ -1409,17 +1487,22 @@ public:
 	    buffer_EX_MEM.PC_SELECT = buffer_ID_EX.PC_SELECT;
 	    buffer_EX_MEM.INC_SELECT = buffer_ID_EX.INC_SELECT;
 	    buffer_EX_MEM.Y_SELECT = buffer_ID_EX.Y_SELECT;
-
-	    buffer_EX_MEM.MEM_READ = buffer_ID_EX.MEM_READ;
+		buffer_EX_MEM.isALU = buffer_ID_EX.isALU;
+		buffer_EX_MEM.isLoad = buffer_ID_EX.isLoad;
+		buffer_EX_MEM.isStore = buffer_ID_EX.isStore;
+		buffer_EX_MEM.isJAL_JALR = buffer_ID_EX.isJAL_JALR;
+		buffer_EX_MEM.isBranchInstruction = buffer_ID_EX.isBranchInstruction;
+		buffer_EX_MEM.branchTaken = buffer_ID_EX.branchTaken;
+		buffer_EX_MEM.MEM_READ = buffer_ID_EX.MEM_READ;
 	    buffer_EX_MEM.MEM_WRITE = buffer_ID_EX.MEM_WRITE;
 	    buffer_EX_MEM.RF_WRITE = buffer_ID_EX.RF_WRITE;
-
 	    returnAddress = buffer_ID_EX.returnAddress;
 	    buffer_EX_MEM.addressA = buffer_ID_EX.addressA;
 	    buffer_EX_MEM.addressB = buffer_ID_EX.addressB;
+		if(knob2 == ON)
+			buffer_EX_MEM.PC = buffer_ID_EX.PC;
 
-
-	    int InA = RA;
+		int InA = RA;
 	    int InB;
 	    if (B_SELECT == 0)
 	        InB = RB;
@@ -1434,76 +1517,70 @@ public:
 	    else if (ALU_OP == 1) //andi
 	        RZ = InA & InB;
 
-	    /*else if (ALU_OP == 2) //beq
+	    else if (ALU_OP == 2 && knob2 == ON) //beq
 	    {
 	        if (InA == InB)
 	        {
 	            INC_SELECT = 1;
-	            buffer_ID_EX.PC -= 4;
 	            PC_SELECT = 1;
 	            iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
+				buffer_EX_MEM.branchTaken = TRUE;
 	        }
 	    }
-	    else if (ALU_OP == 3) //bge
+	    else if (ALU_OP == 3 && knob2 == ON) //bge
 	    {
 	        if (InA >= InB)
 	        {
 	            INC_SELECT = 1;
-	            buffer_ID_EX.PC -= 4;
 	            PC_SELECT = 1;
 	            iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	        }
+				buffer_EX_MEM.branchTaken = TRUE;
+			}
 	    }
 
-	    //bgeu
-	    else if (ALU_OP == 34)
-	    {
-	        if ((unsigned)InA >= (unsigned)InB)
-	        {
+		else if (ALU_OP == 34 && knob2 == ON) //bgeu
+		{
+			if ((unsigned)InA >= (unsigned)InB)
+			{
 	            INC_SELECT = 1;
-	            buffer_ID_EX.PC -= 4;
 	            PC_SELECT = 1;
 	            iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	        }
+				buffer_EX_MEM.branchTaken = TRUE;
+			}
 	    }
 
-	    //bltu
-	    else if (ALU_OP == 35)
-	    {
-	        if ((unsigned)InA < (unsigned)InB)
-	        {
+		else if (ALU_OP == 35 && knob2 == ON) //bltu
+		{
+			if ((unsigned)InA < (unsigned)InB)
+			{
 	            INC_SELECT = 1;
-	            buffer_ID_EX.PC -= 4;
 	            PC_SELECT = 1;
 	            iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	        }
+				buffer_EX_MEM.branchTaken = TRUE;
+			}
 	    }
 
-	    else if (ALU_OP == 4) //blt
-	    {
-	        //cout << "blt: " << buffer_ID_EX.PC << endl;
-	        //cout<<InA<<" "<<InB<<endl;
+		else if (ALU_OP == 4 && knob2 == ON) //blt
+		{
 	        if (InA < InB)
 	        {
 	            INC_SELECT = 1;
-	            buffer_ID_EX.PC -= 4;
 	            PC_SELECT = 1;
 	            iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	            //cout << "blt: " << buffer_ID_EX.PC << endl;
-	        }
-	        
+				buffer_EX_MEM.branchTaken = TRUE;
+	        }	        
 	    }
 
-	    else if (ALU_OP == 5) //bne
-	    {
+		else if (ALU_OP == 5 && knob2 == ON) //bne
+		{
 	        if (InA != InB)
 	        {
 	            INC_SELECT = 1;
-	            buffer_ID_EX.PC -= 4;
 	            PC_SELECT = 1;
 	            iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	        }
-	    }*/
+				buffer_EX_MEM.branchTaken = TRUE;
+			}
+	    }
 
 	    else if (ALU_OP == 6) //ori
 	        RZ = InA | InB;
@@ -1535,13 +1612,12 @@ public:
 	        RZ = InA >> InB;
 	        RZ |= InA & (1 << 31);
 	    }
-	    /*else if (ALU_OP == 22) //jalr
+	    else if (ALU_OP == 22 && knob2 == ON) //jalr
 	    {
 	        buffer_EX_MEM.RZ = InA + InB;
 	        RZ=InA+InB;
-	        buffer_ID_EX.PC -= 4;
 	        returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	    }*/
+	    }
 	    else if (ALU_OP == 25) //mul
 	        RZ = RA * RB;
 
@@ -1551,21 +1627,24 @@ public:
 	    else if (ALU_OP == 31 || ALU_OP == 32) // rem, remu
 	        RZ = RA % RB;
 
-	    /*else if (ALU_OP == -1)
+	    else if (ALU_OP == -1 && knob2 == ON)
 	    { // jal
-	        buffer_ID_EX.PC -= 4;
 	        PC_SELECT = 1;
 	        returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	    }*/
+	    }
 
-	    if(ALU_OP != 22)//jalr
+	    if(ALU_OP != 22 && knob2 == OFF)// except jalr in stalling
 	        buffer_EX_MEM.RZ = RZ;
-	    buffer_EX_MEM.returnAddress = returnAddress;
+		if(knob2 == ON) // forwarding
+			buffer_EX_MEM.RZ = RZ;
+
+		buffer_EX_MEM.returnAddress = returnAddress;
 	    buffer_EX_MEM.INC_SELECT = INC_SELECT;
 	    buffer_EX_MEM.PC_SELECT = PC_SELECT;
-	    buffer_EX_MEM.PC = buffer_ID_EX.PC;
-	}
+		if(knob2 == OFF)
+			buffer_EX_MEM.PC = buffer_ID_EX.PC;}
 	//end of ALU function
+
 /*Stage 4: Memory & RY get updated
     Input: Y_SELECT, MEM_READ, MEM_WRITE, address from RZ/RM, data */
     void memoryStage(int Y_SELECT, int MEM_READ, int MEM_WRITE, int address = 0, int data = 0)
@@ -1573,8 +1652,13 @@ public:
         buffer_EX_MEM.en = buffer_ID_EX.en;
 	    if (buffer_EX_MEM.en == 0)
 	        return;
-	    //cout << hex << "dsd " << buffer_EX_MEM.PC << dec << endl;
-	    int returnAddress = buffer_EX_MEM.returnAddress;
+		buffer_MEM_WB.isALU = buffer_EX_MEM.isALU;
+		buffer_MEM_WB.isLoad = buffer_EX_MEM.isLoad;
+		buffer_MEM_WB.isStore = buffer_EX_MEM.isStore;
+		buffer_MEM_WB.isJAL_JALR = buffer_EX_MEM.isJAL_JALR;
+		buffer_MEM_WB.isBranchInstruction = buffer_EX_MEM.isBranchInstruction;
+		buffer_MEM_WB.branchTaken = buffer_EX_MEM.branchTaken;
+		int returnAddress = buffer_EX_MEM.returnAddress;
 	    int RY;
 	    int dataFromMem;
 	    if(cacheType==1)
@@ -1603,135 +1687,136 @@ public:
     void writeBack(int RF_WRITE, int addressC)
     {
         buffer_MEM_WB.en = buffer_EX_MEM.en;
-        //cout << hex << "decode " << buffer_MEM_WB.PC<< dec << endl;
         if (buffer_MEM_WB.en == 0)
             return;
         readWriteRegFile(WB_STAGE);
-        // buffer_IF_ID.PC = buffer_MEM_WB.PC;
     }
     //End of writeBack
 
-	int prevDependency=-1;
-	int lastEtoE=-1;
-	int forward_dependency_EtoE(bool knob2)
+	void forward_dependency_EtoE()
 	{
 	    if(buffer_EX_MEM.addressC == 0)
-	        return NO_DATA_DEPEND;
+	        return;
+		if (buffer_EX_MEM.isALU == FALSE && buffer_EX_MEM.isJAL_JALR == FALSE)
+			return;
 
 	     if(buffer_ID_EX.addressA == buffer_EX_MEM.addressC && buffer_ID_EX.addressB == buffer_EX_MEM.addressC)
-	    {   
-	        lastEtoE=buffer_EX_MEM.PC;
-	        //cout<<" ............................................................."<<endl;
-	        if(prevDependency!=buffer_ID_EX.PC)
-	        {   
-	            stats_count.data_hazard++;
-	            prevDependency=buffer_ID_EX.PC;
-	        }
-	        if(knob2){
-	            buffer_ID_EX.RA = buffer_EX_MEM.RZ;
-	            buffer_ID_EX.RB = buffer_EX_MEM.RZ;
-	        }
-	        return DATA_DEPEND_RA_RB;
+	    { 
+			//cout<<"EtoE1"<<endl;
+	        stats_count.data_hazard++;	            
+			buffer_ID_EX.RA = buffer_EX_MEM.RZ;
+			buffer_ID_EX.RB = buffer_EX_MEM.RZ;
 	    }    
 	    if(buffer_ID_EX.addressA == buffer_EX_MEM.addressC)
-	    {   //cout<<buffer_ID_EX.addressA<<"        "<<buffer_ID_EX.PC<<" $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ "<<buffer_EX_MEM.RZ<<" "<<buffer_ID_EX.RA<<"    "<<buffer_ID_EX.RB<<endl;
-	        lastEtoE=buffer_EX_MEM.PC;
-	        if(prevDependency!=buffer_ID_EX.PC)
-	        {   
-	            stats_count.data_hazard++;
-	            prevDependency=buffer_ID_EX.PC;
-	        }
-	        if(knob2){
-	            buffer_ID_EX.RA = buffer_EX_MEM.RZ;
-	           // cout<<buffer_ID_EX.addressA<<"        "<<buffer_ID_EX.PC<<" $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ "<<buffer_EX_MEM.RZ<<" "<<buffer_ID_EX.RA<<"    "<<buffer_ID_EX.RB<<endl;
-	        }        
-	        return DATA_DEPEND_RA;
-
+	    {
+			//cout << "EtoE2" << endl;
+			stats_count.data_hazard++;
+	        buffer_ID_EX.RA = buffer_EX_MEM.RZ;
+	        return ;
 	    }
 	    if(buffer_ID_EX.addressB == buffer_EX_MEM.addressC)
 	    {
-	        lastEtoE=buffer_EX_MEM.PC;
-	       // cout<<buffer_ID_EX.addressB<<"        "<<buffer_ID_EX.PC<<" $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ "<<buffer_EX_MEM.RZ<<" "<<buffer_ID_EX.RA<<"    "<<buffer_ID_EX.RB<<endl;
-	        if(prevDependency!=buffer_ID_EX.PC)
-	        {   
-	            stats_count.data_hazard++;
-	            prevDependency=buffer_ID_EX.PC;
-	        }
-	        if(knob2)
-	            buffer_ID_EX.RB = buffer_EX_MEM.RZ;
-	        return DATA_DEPEND_RB;
+			//cout << "EtoE3" << endl;
+			stats_count.data_hazard++;        
+	        buffer_ID_EX.RB = buffer_EX_MEM.RZ;
+	        return;
 	    }
-	    return NO_DATA_DEPEND;
+	    return;
 	}
 	//End of forward_dependency_EtoE()
 
 	//Check forward dependency Memory to Execute
-	int forward_dependency_MtoE(bool knob2)
+	void forward_dependency_MtoE()
 	{
-	    //cout<<buffer_MEM_WB.addressC<<" ^^^^^^^"<<buffer_ID_EX.addressA<<" ^^^^^"<<buffer_ID_EX.addressB<<endl;
 	    if(buffer_MEM_WB.addressC == 0)
-	        return NO_DATA_DEPEND;
+	        return;
 
-	     if(buffer_ID_EX.addressA == buffer_MEM_WB.addressC && buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
-	    {
-	        if(prevDependency!=buffer_ID_EX.PC)
-	        {   
-	            stats_count.data_hazard++;
-	            prevDependency=buffer_ID_EX.PC;
-	        }
-	        if(knob2){
-	            buffer_ID_EX.RA = buffer_MEM_WB.RY;
-	            buffer_ID_EX.RB = buffer_MEM_WB.RY;
-	        }
-	        return DATA_DEPEND_RA_RB;
-	    }    
-
-	    if(buffer_ID_EX.addressA == buffer_MEM_WB.addressC)
-	    {     
-	        if(prevDependency!=buffer_ID_EX.PC)
-	        {   
-	            stats_count.data_hazard++;
-	            prevDependency=buffer_ID_EX.PC;
-	        }
-	        if(knob2)
-	            buffer_ID_EX.RA = buffer_MEM_WB.RY;
-	        return DATA_DEPEND_RA;
-	    }
-	    if(buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
-	    {
-	        if(prevDependency!=buffer_ID_EX.PC)
-	        {   
-	            stats_count.data_hazard++;
-	            prevDependency=buffer_ID_EX.PC;
-	        }
-	        if(knob2)
-	            buffer_ID_EX.RB = buffer_MEM_WB.RY;
-	        return DATA_DEPEND_RB;
-	    }
-	    return NO_DATA_DEPEND;
+		if (buffer_ID_EX.addressA == buffer_MEM_WB.addressC && buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
+		{
+			//cout << "MtoE1" << endl;
+			stats_count.data_hazard++;
+			buffer_ID_EX.RA = buffer_MEM_WB.RY;
+			buffer_ID_EX.RB = buffer_MEM_WB.RY;
+			return;
+		}
+		if(buffer_ID_EX.addressA == buffer_MEM_WB.addressC)
+		{
+			//cout << "MtoE2" << endl;
+			stats_count.data_hazard++;
+			buffer_ID_EX.RA = buffer_MEM_WB.RY;
+			return;
+		}
+		if(buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
+		{
+			//cout << "MtoE3" << endl;
+			stats_count.data_hazard++;
+			buffer_ID_EX.RB = buffer_MEM_WB.RY;
+			return;
+		}
+		return;
 	}
 	//End of forward_dependency_MtoE()
 
-	//Check data dependency Memory to Memory
-	int forward_dependency_MtoM(bool knob2)
+	//Check forward dependency Memory to Execute for stalls
+	void forward_dependency_MtoEStall()
 	{
-	    if(lastEtoE == buffer_MEM_WB.PC)
-	        return NO_DATA_DEPEND;
-	    if(buffer_MEM_WB.addressC == 0)
-	        return NO_DATA_DEPEND;
+		if (buffer_MEM_WB.addressC == 0)
+			return;
+		if (buffer_MEM_WB.isLoad == FALSE)
+			return;
+		if( buffer_EX_MEM.isStore == TRUE)
+			return;
+		if (buffer_ID_EX.addressA == buffer_MEM_WB.addressC && buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
+		{
+			//cout << "MtoEStall1" << endl;
+			stats_count.data_hazard++;
+			stats_count.stalls_data_hazard++;
+			stats_count.cycleCount++;
+			buffer_ID_EX.RA = buffer_MEM_WB.RY;
+			buffer_ID_EX.RB = buffer_MEM_WB.RY;
+			return;
+		}
+		if (buffer_ID_EX.addressA == buffer_MEM_WB.addressC)
+		{
+			//cout << "MtoEStall2" << endl;
+			stats_count.data_hazard++;
+			stats_count.stalls_data_hazard++;
+			stats_count.cycleCount++;
+			buffer_ID_EX.RA = buffer_MEM_WB.RY;
+			return;
+		}
+		if (buffer_ID_EX.addressB == buffer_MEM_WB.addressC)
+		{
+			//cout << "MtoEStall3" << endl;
+			stats_count.data_hazard++;
+			stats_count.stalls_data_hazard++;
+			stats_count.cycleCount++;
+			buffer_ID_EX.RB = buffer_MEM_WB.RY;
+			return;
+		}
+		return;
+	}
+	//End of forward_dependency_MtoEStalls()
 
-	    if(buffer_EX_MEM.addressC == buffer_MEM_WB.addressC)
-	    {
-	        if(prevDependency!=buffer_EX_MEM.PC && buffer_EX_MEM.PC!=buffer_MEM_WB.PC)
-	        {   
-	            stats_count.data_hazard++;
-	            prevDependency=buffer_EX_MEM.PC;
-	        }
-	        if(knob2)
-	            buffer_EX_MEM.RZ = buffer_MEM_WB.RY;
-	        return DATA_DEPENED_MtoM;
-	    }
-	    return NO_DATA_DEPEND;
+	//Check data dependency Memory to Memory
+	void forward_dependency_MtoM()
+	{
+	    if(buffer_MEM_WB.addressC == 0)
+	        return;
+		if(buffer_MEM_WB.isLoad == FALSE)
+			return;
+		
+		if(buffer_EX_MEM.isStore == TRUE){ // Load-Store Dependency
+			if(buffer_EX_MEM.addressB == buffer_MEM_WB.addressC)
+			{
+				//cout << "MtoM" << endl;
+				stats_count.data_hazard++;
+				buffer_EX_MEM.RB = buffer_MEM_WB.RY;
+				//cout<<"Hello"<<buffer_MEM_WB.RY<<endl;
+				return;
+			}
+			return;
+		}
 	}
 	//End of forward_dependency_MtoM()
 
@@ -1817,10 +1902,6 @@ public:
 	//Run Instructions: pipelined
 	void runCode()
 	{
-	    bool knob2; //Enable-disable data forwarding
-	    bool knob3; //Print Register File after every cycle
-	    bool knob4; //Print Data in pipeline register along with cycle number
-	    bool knob5 ; //Print data of particular instruction with cycle number
 	    bool en = 1;
 	    int instruction_number; //for knob5
 	    cout<<"Knob 2 (Data Forwarding Knob)           :  ";
@@ -1840,17 +1921,14 @@ public:
 	    int tmp3=-1;
 	    int tmp2=0;
         while (1)
-        {          
-            stats_count.cycleCount++;
-            if(knob3 == ON)
-                printRegisterFile();
-
+        {
             if (memory[buffer_IF_ID.PC] == 0 && memory[buffer_IF_ID.PC + 1] == 0 && memory[buffer_IF_ID.PC + 2] == 0 && memory[buffer_IF_ID.PC + 3] == 0)
                 en = 0;
-            
-            if(knob2==0)
-            {
-            	//cout<<" ^^^^^^^"<<buffer_IF_ID.PC<<" ^^^^^^^"<<endl;
+
+			stats_count.cycleCount++;
+
+			if (knob2 == 0)
+			{
                 if(buffer_MEM_WB.en2==1 && PC_of_stalledStageEtoE > buffer_MEM_WB.PC && PC_of_stalledStageMtoE > buffer_MEM_WB.PC)
                     writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
 
@@ -1876,8 +1954,8 @@ public:
                 else buffer_ID_EX.en2=0; 
 
                 
-                int dataDependencyEtoE= stall_check_EtoE();
-                int dataDependencyMtoE= stall_check_MtoE();
+                int dataDependencyEtoE = stall_check_EtoE();
+                int dataDependencyMtoE = stall_check_MtoE();
                 if(buffer_MEM_WB.en2==0 && buffer_EX_MEM.en2==0)
                 {
                     PC_of_stalledStageEtoE = INT_MAX;
@@ -1897,68 +1975,65 @@ public:
                 
                 if(buffer_ID_EX.isBranchInstruction==TRUE && buffer_ID_EX.branchTaken==TRUE)
                 {
-                    buffer_IF_ID.PC=buffer_ID_EX.PC;
-                    //cout<<buffer_IF_ID.PC<<" ^^^^^^^^^^^^^^^^^^^"<<endl;
+					if(dataDependencyEtoE == NO_DATA_DEPEND && dataDependencyMtoE == NO_DATA_DEPEND)
+						buffer_IF_ID.PC=buffer_ID_EX.PC;
+					else
+						buffer_IF_ID.PC=buffer_ID_EX.PC-4;
+						
                     buffer_IF_ID.en2=0;
                     buffer_ID_EX.isBranchInstruction=FALSE; 
                     buffer_ID_EX.branchTaken=FALSE;
                     stats_count.stalls_control_hazard++;
-                }
+					stats_count.branch_mispredictions++;
+				}
             }
-            else if(knob2==1)
+            else if(knob2 == 1)
             {
-      			
-                if(buffer_MEM_WB.en2==1)
-                    {
-                    	//cout<<buffer_IF_ID.PC<<
-                    	//cout<<"TY ";
-                    	writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
-                    }
-                forward_dependency_MtoE(knob2);
-                forward_dependency_MtoM(knob2);
-
-                forward_dependency_EtoE(knob2);
+				if(buffer_MEM_WB.en2==1){
+					writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
+				}
+                forward_dependency_MtoE();
+				forward_dependency_MtoM();
+                forward_dependency_EtoE();
 
                 if(buffer_EX_MEM.en2==1){
-                	//cout<<"HI ";cout<<buffer_EX_MEM.RZ<<" "<<buffer_MEM_WB.RY<<" "<<buffer_ID_EX.Y_SELECT<<" "<<buffer_EX_MEM.Y_SELECT<<"^";
-                    memoryStage(buffer_EX_MEM.Y_SELECT, buffer_EX_MEM.MEM_READ, buffer_EX_MEM.MEM_WRITE, buffer_EX_MEM.RZ, buffer_EX_MEM.RB);
+                	memoryStage(buffer_EX_MEM.Y_SELECT, buffer_EX_MEM.MEM_READ, buffer_EX_MEM.MEM_WRITE, buffer_EX_MEM.RZ, buffer_EX_MEM.RB);
                     buffer_MEM_WB.en2=1;
-                    //cout<<buffer_EX_MEM.Y_SELECT<<" "<<buffer_MEM_WB.RY<<" 	";
-
                 } else buffer_MEM_WB.en2=0;
 
-              	
-                if(buffer_ID_EX.en2==1){
-                	//cout<<"HI2 ";
+				forward_dependency_MtoEStall();
+
+				if(buffer_ID_EX.en2==1){
                     alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
                     buffer_EX_MEM.en2=1;
                 } else buffer_EX_MEM.en2=0;
 
-               // isPrevLoadInstruction=isLoadInstruction;
-
                 if(buffer_IF_ID.en2==1)
                 {
-                	//cout<<"HI3 ";
                     decode();
                     buffer_ID_EX.en2=1;
                 }   else buffer_ID_EX.en2=0;
+
+
+
                 fetch(en);
-                //cout<<"HI4 ";
                 buffer_IF_ID.en2=1;
 
-                if(buffer_ID_EX.isBranchInstruction==TRUE && buffer_ID_EX.branchTaken==TRUE)
+                if(buffer_EX_MEM.isBranchInstruction==TRUE && buffer_EX_MEM.branchTaken==TRUE)
                 {
-                    buffer_IF_ID.PC=buffer_ID_EX.PC;
-                    //cout<<buffer_IF_ID.PC<<" ^^^^^^^^^^^^^^^^^^^"<<endl;
+                    buffer_IF_ID.PC=buffer_EX_MEM.PC-4;
                     buffer_IF_ID.en2=0;
-                    buffer_ID_EX.isBranchInstruction=FALSE; 
-                    buffer_ID_EX.branchTaken=FALSE;
-                    stats_count.stalls_control_hazard++;
-                }
-                cout<<endl;
+					buffer_ID_EX.en2=0;
+                    buffer_EX_MEM.isBranchInstruction=FALSE; 
+                    buffer_EX_MEM.branchTaken=FALSE;
+                    stats_count.stalls_control_hazard+=2;
+					stats_count.branch_mispredictions++;
+				}
             }
+			if (knob3 == ON)
+				printRegisterFile();
 
-            if(knob4 == ON)
+			if(knob4 == ON)
                 printPipelineRegisters();
 
             if(knob5 == ON){
@@ -1980,20 +2055,21 @@ public:
             if(en == 0 && buffer_IF_ID.en == 0 && buffer_ID_EX.en == 0 && buffer_EX_MEM.en == 0 && buffer_MEM_WB.en == 0)
                 break; 
 
-			cout<<stats_count.data_hazard;	   
+			cout<<stats_count.data_hazard;
         }
-	    if(knob3 == OFF){
-	         printRegisterFile();
-	    }
-	    cout<<"----------------------------------------------------------------------"<<endl;
+		// Inserted NOP
+		--stats_count.cycleCount;
+		--stats_count.RTypeInstructions;
+		--stats_count.aluInstructions;
+		if (knob3 == OFF)
+			printRegisterFile();
+		cout<<"----------------------------------------------------------------------"<<endl;
 	}
 	//End of runCode
-	//End of readWriteRegFile
 };
 
 class unpipelined{
 public:
-    int cycleCount = 0;
     unsigned int PC = 0;	//Program Counter
     int IR;					//Instruction Register
     int RA, RB, RZ, RY, RM; //Interstage Buffers
@@ -2612,9 +2688,6 @@ public:
         fstream fileWriting; 
         fileWriting.open("pipelineRegisters.txt", ios::out); //To clear data of existing pipelineRegisters.txt
         fileWriting.close();
-        bool knob3; //Print Register File after every cycle
-        bool knob4; //Print Data in pipeline register along with cycle number
-        bool knob5; //Print data of particular instruction with cycle number
         
         int instruction_number; //for knob5
         cout<<"Knob 3 (Register File Knob)             :  ";
@@ -2630,23 +2703,21 @@ public:
         }
         cout<<"----------------------------------------------------------------------"<<endl;
 
-        while (1)
+		while (1)
         {
-            if (memory[PC] == 0 && memory[PC + 1] == 0 && memory[PC + 2] == 0 && memory[PC + 3] == 0)
-                break;
-                
+			if (memory[PC] == 0 && memory[PC + 1] == 0 && memory[PC + 2] == 0 && memory[PC + 3] == 0)
+                break;               
             fetch();
             decode();
             alu(ALU_OP, B_SELECT, immediate);
             memoryStage(Y_SELECT, MEM_READ, MEM_WRITE, RZ, RB);
             writeBack(RF_WRITE, addressC);
-
 			stats_count.cycleCount++;
-            if(knob3 == ON)
+
+			if(knob3 == ON)
             	printRegisterFile();
             if(knob4 == ON)
                 printPipelineRegisters();
-
             if(knob5 == ON){
                 if(PC == instruction_number){
                     cout<<"Cycle Number\t:\t"<<stats_count.cycleCount<<endl;
@@ -2656,14 +2727,14 @@ public:
                     cout<<"RY\t\t:\t"<<RY<<endl;
                 }
             }
-        }
-        if(knob3 == OFF)
+		}
+		if(knob3 == OFF)
         	printRegisterFile();
-        cout<<"----------------------------------------------------------------------"<<endl;
-    
+		cout<<"----------------------------------------------------------------------"<<endl; 
     }
     //End of runCode
 };
+
 //start of selectCache
 void selectCache()
 {
@@ -2780,11 +2851,7 @@ void updateMemory()
     {
         lli value = 0;
 
-        int i = 2; //initially : 0x
-     //  while (machineLine[i] != ' ')
-      //     address = address * 16 + hexadecimal[machineLine[i++]];
-
-     //  i += 3; //between : 0x
+        int i = 2;
         while (i < machineLine.length())
             value = value * 16 + hexadecimal[machineLine[i++]];
         if(cacheType==1)
@@ -2797,15 +2864,20 @@ void updateMemory()
             readWriteMemory(0, 3, address, value);
         address+=4;
     }
-	lli value = 0x00000033;
-	if (cacheType == 1)
-		readWriteDMCache(DMCache1, n, m, 0, 3, address, value);
-	if (cacheType == 2)
-		readWriteFACache(FACache1, n, m, 0, 3, address, value);
-	if (cacheType == 3)
-		readWriteSACache(SACache1, n, m, 0, 3, address, value);
-	else
-		readWriteMemory(0, 3, address, value);
+	if(knob1 == ON) {
+		lli value = 0x00000033;
+		for(int i = 0; i < 2; i++){
+			if (cacheType == 1)
+				readWriteDMCache(DMCache1, n, m, 0, 3, address, value);
+			if (cacheType == 2)
+				readWriteFACache(FACache1, n, m, 0, 3, address, value);
+			if (cacheType == 3)
+				readWriteSACache(SACache1, n, m, 0, 3, address, value);
+			else
+				readWriteMemory(0, 3, address, value);
+			address += 4;
+		}
+	}
     fileReading.close();
 }
 //End of updateMemory
@@ -2813,7 +2885,6 @@ void updateMemory()
 //main function
 int main()
 {
-    bool knob1;
     regArray[2] = 0xFFFFFF; //initialize x2, x3
     regArray[3] = 0x100000;
 
@@ -2821,13 +2892,15 @@ int main()
     fileWriting.open("regFile.txt", ios::out);
     fileWriting.close();
     selectCache();
-    updateMemory(); //Update memory with data & instructions
 
-    cout<<"----------------------------------------------------------------------"<<endl;
-    cout<<"Press 0 : Turn OFF the KNOB"<<endl<<"Press 1 : Turn ON the KNOB"<<endl;
-    cout<<"----------------------------------------------------------------------"<<endl;
-    cout<<"Knob 1 (Pipeline Knob)                  :  ";
-    cin>>knob1;
+	cout << "----------------------------------------------------------------------" << endl;
+	cout << "Press 0 : Turn OFF the KNOB" << endl
+		 << "Press 1 : Turn ON the KNOB" << endl;
+	cout << "----------------------------------------------------------------------" << endl;
+	cout << "Knob 1 (Pipeline Knob)                  :  ";
+	cin >> knob1;
+
+	updateMemory(); //Update memory with data & instructions
     
     if(knob1 == ON){
         pipelined execute_pipeline;
@@ -2837,9 +2910,7 @@ int main()
         unpipelined execute_unpipeline;
         execute_unpipeline.runCode();
     }
-	--stats_count.cycleCount;
-	--stats_count.RTypeInstructions;
-    stats_print();
+	stats_print();
     printMemory();
 }
 //End of main
