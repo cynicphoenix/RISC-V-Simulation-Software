@@ -1,60 +1,21 @@
 Risc V Simulation Software (ReadMe File)
+----------------------------------------------------------
+Overview :
+
+Task 1 : Converts assembly code to machine code
+Task 2 : Unpipelined execution of machine code
+Task 3 : Pipelined/(Unpipelined) Stalling, Forwarding, Static Branch Prediction, Cache Support 
+For only stalling, control detection moved to decode(1 stall penalty for misprediction)
+For forwarding, control detection in ALU(2 stalls penanlty for misprediction)
+Branch Prediction : Static & Always Not Taken
+Cache : Direct Map, Set Assosiative, Fully Associative
 
 ----------------------------------------------------------
+Run :
 
-Task 1 Work Division :
-
-R & S type Instructions : Bhawna
-I type Instructions : Soumil
-SB type Instructions : Amit
-UJ & U type Instructions : Aman
-
-dec2Binary() : Amit & Aman
-createMap() & bin2Hex() : (Source - Geeksforgeeks)
-assignLineNumberToLabel() : Amit
-main() : Bhawna
-
-Syntax Analysis; comment, .data & .text support : Bhawna 
-Debugged by Bhawna & Deepak
-
-----------------------------------------------------------
-
-Task 2 Work Division :
-
-Data Path : Aman, Amit & Bhawna
-Control Circuitry : Deepak & Soumil
-
-Stages:
-fetch() : Amit & Aman
-decode() : Deepak & Soumil
-alu() : Amit & Aman
-memory() : Amit & Bhawna
-writeback () : Aman & Bhawna
-
-readWriteRegisterFile() : Amit & Aman
-readWriteMemory() : Deepak
-iag() : Amit & Aman
-updateMemory() : Amit & Aman
-printMemory() : Bhawna
-printRegisterFile() : Bhawna
-runCode() : Aman
-main() : Amit
-
-Debugging done by ALL (Instructions were assigned to each)
-Most of the task 2 code debugged by Deepak
-
-----------------------------------------------------------
-
-List of not supported instructions :
-
-64-bit instructions
-floating point instructions
-pseudo instructions
-csrrc, csrrs, csrrsi, csrrw, csrrwi,
-ebreak, ecall, fence, fence.i
-
------------------------------------------------------------
-
-Limitations :
-Immediate Values can only be in integer (no hex support)
-
+In terminal go to file location :
+g++ task1.cpp -o ./a
+./a
+(Enter file name : assemblyCode.asm or any other)
+g++ task3.cpp -o ./b
+./b
