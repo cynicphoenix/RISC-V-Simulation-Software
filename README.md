@@ -3,6 +3,7 @@ Risc V Simulation Software (ReadMe File)
 Overview :
 
 Task 1 : Converts assembly code to machine code
+
 Task 2 : Unpipelined execution of machine code
 Task 3 : Pipelined/(Unpipelined) Stalling, Forwarding, Static Branch Prediction, Cache Support 
 For only stalling, control detection moved to decode(1 stall penalty for misprediction)
