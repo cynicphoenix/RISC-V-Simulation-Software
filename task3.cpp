@@ -2070,8 +2070,8 @@ class pipelined
 				cout << data_hazard;
 		}
 		// Inserted NOP
-		cycleCount--;
-		aluInstructions--;
+		cycleCount -= 2;
+		aluInstructions -= 2;
 		if (knob3 == OFF)
 			printRegisterFile();
 		cout << "----------------------------------------------------------------------" << endl;
