@@ -314,7 +314,7 @@ void decode()
 		addressA = rs1;
 		immediate = imm;
 		addressC = rd;
-		MEM_READ = 3;
+		MEM_READ = 0;
 		MEM_WRITE = 0;
 		if (funct3 == 0) ///addi
 		{
