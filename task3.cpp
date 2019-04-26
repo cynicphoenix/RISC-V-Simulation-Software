@@ -2770,7 +2770,7 @@ void selectCache()
 		int x, y;
 		cout << "Enter X (2^X - cache size in bytes)     :  ";
 		cin >> x;
-		cout << "Enter BLOCK SIZE (in words)             :  ";
+		cout << "Enter Y (2^Y - number of words)         :  ";
 		cin >> y;
 		n = x - y - 2;
 		m = y;
@@ -2787,7 +2787,7 @@ void selectCache()
 		int x, y;
 		cout << "Enter X (2^X - cache size in bytes)     :  ";
 		cin >> x;
-		cout << "Enter BLOCK SIZE (in words)             :  ";
+		cout << "Enter Y (2^Y - number of words)         :  ";
 		cin >> y;
 		n = x - y - 2;
 		m = y;
@@ -2804,7 +2804,7 @@ void selectCache()
 		int x, y;
 		cout << "Enter X (2^X - cache size in bytes)     :  ";
 		cin >> x;
-		cout << "Enter BLOCK SIZE (in words)             :  ";
+		cout << "Enter Y (2^Y - number of words)         :  ";
 		cin >> y;
 		cout << "Enter K (2^K-way associative cache)     :  ";
 		cin >> k;
@@ -2883,7 +2883,7 @@ void updateMemory()
 		if (cacheType == 2)
 			readWriteFACache(FACache1, n, m, 0, 3, address, value);
 		if (cacheType == 3)
-			readWriteSACache(SACache1, n, m, 0, 3, address, value);
+			readWriteSACache(SACache1, n, m,k, 0, 3, address, value);
 		else
 			readWriteMemory(0, 3, address, value);
 		address += 4;
@@ -2898,7 +2898,7 @@ void updateMemory()
 			if (cacheType == 2)
 				readWriteFACache(FACache1, n, m, 0, 3, address, value);
 			if (cacheType == 3)
-				readWriteSACache(SACache1, n, m, 0, 3, address, value);
+				readWriteSACache(SACache1, n, m,k,0, 3, address, value);
 			else
 				readWriteMemory(0, 3, address, value);
 			address += 4;
@@ -2939,3 +2939,4 @@ int main()
 	printMemory();
 }
 //End of main
+
