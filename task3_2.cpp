@@ -978,10 +978,7 @@ class pipelined
 		{
 			buffer_ID_EX.isLoad = TRUE;
 			isLoadInstruction = 1;
-			/*if(prevPC != buffer_IF_ID.PC){
-	            stats_count.ITypeInstructions++;
-	            dataTransferInstructions++;
-	        }*/
+			
 			RF_WRITE = 1;
 			int imm = IR >> 20;
 			unsigned int rs1 = IR << 12;
@@ -1008,10 +1005,7 @@ class pipelined
 		else if (opcode == OPCODE_I2)
 		{
 			buffer_ID_EX.isALU = TRUE;
-			/*if(prevPC != buffer_IF_ID.PC){
-	            stats_count.ITypeInstructions++;
-	            aluInstructions++;
-	        }*/
+			
 			RF_WRITE = 1;
 			int imm = IR >> 20;
 			unsigned int rs1 = IR << 12;
@@ -1078,10 +1072,7 @@ class pipelined
 		else if (opcode == OPCODE_I3)
 		{
 			buffer_ID_EX.isALU = TRUE;
-			/*if(prevPC != buffer_IF_ID.PC){
-	            stats_count.ITypeInstructions++;
-	            aluInstructions++;
-	        }*/
+			
 
 			RF_WRITE = 1;
 			addressA = IR << 12;
@@ -1123,8 +1114,8 @@ class pipelined
 			buffer_ID_EX.branchTaken = TRUE;
 			buffer_ID_EX.isJAL_JALR = FALSE;
 
-			//if (prevPC != buffer_IF_ID.PC)// && knob2 == OFF)
-			//	controlInstructions++;
+			
+			
 
 			RF_WRITE = 1;
 			int imm = IR >> 20;
@@ -1142,23 +1133,14 @@ class pipelined
 			MEM_READ = 0;
 			MEM_WRITE = 0;
 
-			//Execute moved to decode : Control Hazard for stalling
-			/*if (knob2 == OFF)
-			{
-				int InA = regArray[rs1];
-				int InB = immediate;
-				buffer_ID_EX.RZ = InA + InB;
-				returnAddress = iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
-			}*/
+			
+			
 		}
 
 		else if (opcode == OPCODE_S1) //store
 		{
 			buffer_ID_EX.isStore = TRUE;
-			/*if(prevPC != buffer_IF_ID.PC){
-	            stats_count.STypeInstructions++;
-	            dataTransferInstructions++;
-	        }*/
+			
 			int tmp = (1 << 5) - 1;
 			tmp <<= 7;
 			int imm1 = IR & tmp;
@@ -1189,10 +1171,7 @@ class pipelined
 		else if (opcode == OPCODE_U1) //auipc
 		{
 			buffer_ID_EX.isALU = TRUE;
-			/*if(prevPC != buffer_IF_ID.PC){
-	            stats_count.UTypeInstructions++;
-	            aluInstructions++;
-	        }*/
+			
 			immediate = IR >> 12;
 
 			addressC = IR << 20;
@@ -1208,10 +1187,7 @@ class pipelined
 		else if (opcode == OPCODE_U2) //lui
 		{
 			buffer_ID_EX.isALU = TRUE;
-			/*if(prevPC != buffer_IF_ID.PC){
-	            stats_count.UTypeInstructions++;
-	            aluInstructions++;
-	        }*/
+			
 			immediate = IR >> 12;
 
 			addressC = IR << 20;
@@ -1226,10 +1202,7 @@ class pipelined
 		else if (opcode == OPCODE_R1 || opcode == OPCODE_R2)
 		{
 			buffer_ID_EX.isALU = TRUE;
-			/*if(prevPC != buffer_IF_ID.PC){
-	            stats_count.RTypeInstructions++;
-	            aluInstructions++;
-	        }*/
+			
 			unsigned int rs1 = IR << 12;
 			rs1 >>= 27;
 			unsigned int rs2 = IR << 7;
@@ -1302,8 +1275,8 @@ class pipelined
 			buffer_ID_EX.isBranchInstruction = TRUE;
 			buffer_ID_EX.branchTaken = TRUE;
 			buffer_ID_EX.isJAL_JALR = FALSE;
-			//if (prevPC != buffer_IF_ID.PC && knob2 == OFF)
-			//	controlInstructions++;
+			
+			
 
 			unsigned int rd = IR << 20;
 			rd >>= 27;
@@ -1328,18 +1301,14 @@ class pipelined
 			MEM_WRITE = 0;
 			Y_SELECT = 2;
 
-		/*	if (knob2 == OFF)
-			{
-				PC_SELECT = 1;
-				returnAddress = iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
-			}*/
+		
 		}
 
 		else if (opcode == OPCODE_SB1)
 		{
 			buffer_ID_EX.isBranchInstruction = TRUE;
-			//if (prevPC != buffer_IF_ID.PC && knob2 == OFF)
-			//	controlInstructions++;
+			
+			
 
 			unsigned int rs1 = IR << 12;
 			rs1 >>= 27;
@@ -1359,66 +1328,62 @@ class pipelined
 			int InA = regArray[rs1];
 			int InB = regArray[rs2];
 
-/*			if (knob2 == OFF)
-			{
-				PC_SELECT = 1;
-				INC_SELECT = 1;
-			}*/
+
 
 			// Execute moved to decode for stalling
 			if (funct3 == 5)
 			{ //bge
 				ALU_OP = 3;
-	//			if (InA >= InB && knob2 == OFF)
-	//			{
-	//				buffer_ID_EX.branchTaken = TRUE;
-	//				iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	//			}
+	
+	
+	
+	
+	
 			}
 			else if (funct3 == 7)
 			{ //bgeu
 				ALU_OP = 34;
-	//			if ((unsigned)InA >= (unsigned)InB && knob2 == OFF)
-	//			{
-	//				buffer_ID_EX.branchTaken = TRUE;
-	//				iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	//			}
+	
+	
+	
+	
+	
 			}
 			else if (funct3 == 4)
 			{ //blt
 				ALU_OP = 4;
-	//			if (InA < InB && knob2 == OFF)
-	//			{
-	//				buffer_ID_EX.branchTaken = TRUE;
-	//				iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	//			}
+	
+	
+	
+	
+	
 			}
 			else if (funct3 == 6)
 			{ //bltu
 				ALU_OP = 35;
-	//			if ((unsigned)InA < (unsigned)InB && knob2 == OFF)
-	//			{
-	//				buffer_ID_EX.branchTaken = TRUE;
-	//				iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	//			}
+	
+	
+	
+	
+	
 			}
 			else if (funct3 == 0)
 			{ //beq
 				ALU_OP = 2;
-	//			if (InA == InB && knob2 == OFF)
-	//			{
-	//				buffer_ID_EX.branchTaken = TRUE;
-	//				iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	//			}
+	
+	
+	
+	
+	
 			}
 			else if (funct3 == 1) //bne
 			{
 				ALU_OP = 5;
-	//			if (InA != InB && knob2 == OFF)
-	//			{
-	//				buffer_ID_EX.branchTaken = TRUE;
-	//				iag(DECODE_STAGE, INC_SELECT, PC_SELECT, immediate);
-	//			}
+	
+	
+	
+	
+	
 			}
 		
 			addressA = rs1;
@@ -1434,10 +1399,10 @@ class pipelined
 		if (addressC < 0)
 			addressC += 32;
 
-		//if ((buffer_ID_EX.isBranchInstruction == FALSE || buffer_ID_EX.branchTaken == FALSE) && knob2 == OFF)
-		//	buffer_ID_EX.PC = buffer_IF_ID.PC;
+		
+		
 
-		//if (knob2 == ON )
+		
 			buffer_ID_EX.PC = buffer_IF_ID.PC;
 
 		buffer_ID_EX.addressC = addressC;
@@ -1495,7 +1460,7 @@ class pipelined
 		returnAddress = buffer_ID_EX.returnAddress;
 		buffer_EX_MEM.addressA = buffer_ID_EX.addressA;
 		buffer_EX_MEM.addressB = buffer_ID_EX.addressB;
-	//	if (knob2 == ON)
+	
 			buffer_EX_MEM.PC = buffer_ID_EX.PC;
 
 		int InA = RA;
@@ -1513,7 +1478,7 @@ class pipelined
 		else if (ALU_OP == 1) //andi
 			RZ = InA & InB;
 
-		else if (ALU_OP == 2 )//&& knob2 == ON) //beq
+		else if (ALU_OP == 2 )//beq
 		{
 			if (InA == InB)
 			{
@@ -1523,7 +1488,7 @@ class pipelined
 				buffer_EX_MEM.branchTaken = TRUE;
 			}
 		}
-		else if (ALU_OP == 3)// && knob2 == ON) //bge
+		else if (ALU_OP == 3)//bge
 		{
 			if (InA >= InB)
 			{
@@ -1534,7 +1499,7 @@ class pipelined
 			}
 		}
 
-		else if (ALU_OP == 34)// && knob2 == ON) //bgeu
+		else if (ALU_OP == 34)//bgeu
 		{
 			if ((unsigned)InA >= (unsigned)InB)
 			{
@@ -1545,7 +1510,7 @@ class pipelined
 			}
 		}
 
-		else if (ALU_OP == 35)// && knob2 == ON) //bltu
+		else if (ALU_OP == 35)//bltu
 		{
 			if ((unsigned)InA < (unsigned)InB)
 			{
@@ -1556,7 +1521,7 @@ class pipelined
 			}
 		}
 
-		else if (ALU_OP == 4)// && knob2 == ON) //blt
+		else if (ALU_OP == 4)//blt
 		{
 			if (InA < InB)
 			{
@@ -1567,7 +1532,7 @@ class pipelined
 			}
 		}
 
-		else if (ALU_OP == 5)// && knob2 == ON) //bne
+		else if (ALU_OP == 5)//bne
 		{
 			if (InA != InB)
 			{
@@ -1608,7 +1573,7 @@ class pipelined
 			RZ = InA >> InB;
 			RZ |= InA & (1 << 31);
 		}
-		else if (ALU_OP == 22)// && knob2 == ON) //jalr
+		else if (ALU_OP == 22)//jalr
 		{
 			buffer_EX_MEM.RZ = InA + InB;
 			RZ = InA + InB;
@@ -1623,7 +1588,7 @@ class pipelined
 		else if (ALU_OP == 31 || ALU_OP == 32) // rem, remu
 			RZ = RA % RB;
 
-		else if (ALU_OP == -1 )//&& knob2 == ON)
+		else if (ALU_OP == -1 )
 		{ // jal
 			PC_SELECT = 1;
 			returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
@@ -1633,19 +1598,19 @@ class pipelined
 			dataTransferInstructions++;
 		else if (buffer_ID_EX.isALU == TRUE)
 			aluInstructions++;
-		else if (buffer_ID_EX.isBranchInstruction == TRUE)// && knob2 == ON)
+		else if (buffer_ID_EX.isBranchInstruction == TRUE)
 			controlInstructions++;
 
-	//	if (ALU_OP != 22 && knob2 == OFF) // except jalr in stalling
-	//		buffer_EX_MEM.RZ = RZ;
-	//	if (knob2 == ON) // forwarding
+	
+	
+	
 			buffer_EX_MEM.RZ = RZ;
 
 		buffer_EX_MEM.returnAddress = returnAddress;
 		buffer_EX_MEM.INC_SELECT = INC_SELECT;
 		buffer_EX_MEM.PC_SELECT = PC_SELECT;
-	//	if (knob2 == OFF)
-	//		buffer_EX_MEM.PC = buffer_ID_EX.PC;
+	
+	
 	}
 	//end of ALU function
 
@@ -1925,19 +1890,19 @@ class pipelined
 
 			if(knob2==0)
             {
-            	//cout<<buffer_IF_ID.en2<<" ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"<<endl;
-            	//cout<<" ^^^^^^^"<<buffer_IF_ID.PC<<" ^^^^^^^"<<endl;
+            	
+            	
                 if(buffer_MEM_WB.en2==1){
-                	//cout<<" W"<<endl;
+                	
                     writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
                 }
 
                 if(buffer_EX_MEM.en2==1)
-                {  //cout<<" M"<<endl;
-              	//	cout<<"  MEMORY"<<endl;
+                {  
+              	
                     buffer_MEM_WB.en2=1;
                     memoryStage(buffer_EX_MEM.Y_SELECT, buffer_EX_MEM.MEM_READ, buffer_EX_MEM.MEM_WRITE, buffer_EX_MEM.RZ, buffer_EX_MEM.RB);
-                //cout<<"  MEMORY2"<<endl;
+                
             }
                 else{
                 	buffer_MEM_WB.en2=0;
@@ -1945,7 +1910,7 @@ class pipelined
                 }
 
                 if(buffer_ID_EX.en2==1)
-                {//cout<<" E"<<endl;
+                {
                     buffer_EX_MEM.en2=1;
                     alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
                   
@@ -1955,17 +1920,17 @@ class pipelined
                 	buffer_EX_MEM.addressC=0;
                 }
 				
-             		//cout<<buffer_IF_ID.en2<<"  ^^^^^^^^^^"<<endl;
+             		
                 if(buffer_IF_ID.en2<1)
                 	buffer_IF_ID.en2++;
                 
                 if(buffer_IF_ID.en2==1 && branchDecisionMade==0)
-                {	//cout<<" ||||||||"<<buffer_IF_ID.PC<<" _________"<<endl;
-                    //cout<<" D"<<endl;
+                {	
+                    
                     buffer_ID_EX.en2=1;
                     decode();
                     
-                  //  cout<<buffer_ID_EX.RZ<<"  **"<<endl;
+                  
                 }
                 else {
                 	buffer_ID_EX.en2=0; 
@@ -1984,7 +1949,7 @@ class pipelined
                 int dataDependencyEtoE= stall_check_EtoE();
                 if(dataDependencyEtoE != NO_DATA_DEPEND){
                 	buffer_IF_ID.en2=-2;
-                	//cout<<" LL";
+                	
                 	buffer_ID_EX.en2=0;
                 	stalls_data_hazard++;      
                 } 
@@ -1994,7 +1959,7 @@ class pipelined
                 	}
                 if(buffer_IF_ID.en2==1)
                 {	
-                	//cout<<" F"<<endl;
+                	
            			fetch(en);
            			branchDecisionMade=0;
       			}
@@ -2011,8 +1976,8 @@ class pipelined
 					branchDecisionMade=1;
 				}
 
-                //cout<<buffer_IF_ID.en2<<" ^^^^^^^^^^^^^^^^^^^^"<<endl;
-               // cout<<" ||||||||"<<buffer_IF_ID.PC<<" _________"<<endl;
+                
+               
             }
 			else if (knob2 == 1)
 			{
