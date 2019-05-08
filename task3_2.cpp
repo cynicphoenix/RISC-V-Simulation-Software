@@ -1,6 +1,5 @@
 // Task 3: Pipelining
 
-
 //bool en2....int
 //make change
 #include <bits/stdc++.h>
@@ -978,7 +977,7 @@ class pipelined
 		{
 			buffer_ID_EX.isLoad = TRUE;
 			isLoadInstruction = 1;
-			
+
 			RF_WRITE = 1;
 			int imm = IR >> 20;
 			unsigned int rs1 = IR << 12;
@@ -1005,7 +1004,7 @@ class pipelined
 		else if (opcode == OPCODE_I2)
 		{
 			buffer_ID_EX.isALU = TRUE;
-			
+
 			RF_WRITE = 1;
 			int imm = IR >> 20;
 			unsigned int rs1 = IR << 12;
@@ -1072,7 +1071,6 @@ class pipelined
 		else if (opcode == OPCODE_I3)
 		{
 			buffer_ID_EX.isALU = TRUE;
-			
 
 			RF_WRITE = 1;
 			addressA = IR << 12;
@@ -1114,9 +1112,6 @@ class pipelined
 			buffer_ID_EX.branchTaken = TRUE;
 			buffer_ID_EX.isJAL_JALR = FALSE;
 
-			
-			
-
 			RF_WRITE = 1;
 			int imm = IR >> 20;
 			unsigned int rs1 = IR << 12;
@@ -1132,15 +1127,12 @@ class pipelined
 			addressC = rd;
 			MEM_READ = 0;
 			MEM_WRITE = 0;
-
-			
-			
 		}
 
 		else if (opcode == OPCODE_S1) //store
 		{
 			buffer_ID_EX.isStore = TRUE;
-			
+
 			int tmp = (1 << 5) - 1;
 			tmp <<= 7;
 			int imm1 = IR & tmp;
@@ -1171,7 +1163,7 @@ class pipelined
 		else if (opcode == OPCODE_U1) //auipc
 		{
 			buffer_ID_EX.isALU = TRUE;
-			
+
 			immediate = IR >> 12;
 
 			addressC = IR << 20;
@@ -1187,7 +1179,7 @@ class pipelined
 		else if (opcode == OPCODE_U2) //lui
 		{
 			buffer_ID_EX.isALU = TRUE;
-			
+
 			immediate = IR >> 12;
 
 			addressC = IR << 20;
@@ -1202,7 +1194,7 @@ class pipelined
 		else if (opcode == OPCODE_R1 || opcode == OPCODE_R2)
 		{
 			buffer_ID_EX.isALU = TRUE;
-			
+
 			unsigned int rs1 = IR << 12;
 			rs1 >>= 27;
 			unsigned int rs2 = IR << 7;
@@ -1275,8 +1267,6 @@ class pipelined
 			buffer_ID_EX.isBranchInstruction = TRUE;
 			buffer_ID_EX.branchTaken = TRUE;
 			buffer_ID_EX.isJAL_JALR = FALSE;
-			
-			
 
 			unsigned int rd = IR << 20;
 			rd >>= 27;
@@ -1300,15 +1290,11 @@ class pipelined
 			MEM_READ = 0;
 			MEM_WRITE = 0;
 			Y_SELECT = 2;
-
-		
 		}
 
 		else if (opcode == OPCODE_SB1)
 		{
 			buffer_ID_EX.isBranchInstruction = TRUE;
-			
-			
 
 			unsigned int rs1 = IR << 12;
 			rs1 >>= 27;
@@ -1328,64 +1314,32 @@ class pipelined
 			int InA = regArray[rs1];
 			int InB = regArray[rs2];
 
-
-
 			// Execute moved to decode for stalling
 			if (funct3 == 5)
 			{ //bge
 				ALU_OP = 3;
-	
-	
-	
-	
-	
 			}
 			else if (funct3 == 7)
 			{ //bgeu
 				ALU_OP = 34;
-	
-	
-	
-	
-	
 			}
 			else if (funct3 == 4)
 			{ //blt
 				ALU_OP = 4;
-	
-	
-	
-	
-	
 			}
 			else if (funct3 == 6)
 			{ //bltu
 				ALU_OP = 35;
-	
-	
-	
-	
-	
 			}
 			else if (funct3 == 0)
 			{ //beq
 				ALU_OP = 2;
-	
-	
-	
-	
-	
 			}
 			else if (funct3 == 1) //bne
 			{
 				ALU_OP = 5;
-	
-	
-	
-	
-	
 			}
-		
+
 			addressA = rs1;
 			addressB = rs2;
 			addressC = 0;
@@ -1399,11 +1353,7 @@ class pipelined
 		if (addressC < 0)
 			addressC += 32;
 
-		
-		
-
-		
-			buffer_ID_EX.PC = buffer_IF_ID.PC;
+		buffer_ID_EX.PC = buffer_IF_ID.PC;
 
 		buffer_ID_EX.addressC = addressC;
 		buffer_ID_EX.immediate = immediate;
@@ -1460,8 +1410,8 @@ class pipelined
 		returnAddress = buffer_ID_EX.returnAddress;
 		buffer_EX_MEM.addressA = buffer_ID_EX.addressA;
 		buffer_EX_MEM.addressB = buffer_ID_EX.addressB;
-	
-			buffer_EX_MEM.PC = buffer_ID_EX.PC;
+
+		buffer_EX_MEM.PC = buffer_ID_EX.PC;
 
 		int InA = RA;
 		int InB;
@@ -1478,7 +1428,7 @@ class pipelined
 		else if (ALU_OP == 1) //andi
 			RZ = InA & InB;
 
-		else if (ALU_OP == 2 )//beq
+		else if (ALU_OP == 2) //beq
 		{
 			if (InA == InB)
 			{
@@ -1488,7 +1438,7 @@ class pipelined
 				buffer_EX_MEM.branchTaken = TRUE;
 			}
 		}
-		else if (ALU_OP == 3)//bge
+		else if (ALU_OP == 3) //bge
 		{
 			if (InA >= InB)
 			{
@@ -1499,7 +1449,7 @@ class pipelined
 			}
 		}
 
-		else if (ALU_OP == 34)//bgeu
+		else if (ALU_OP == 34) //bgeu
 		{
 			if ((unsigned)InA >= (unsigned)InB)
 			{
@@ -1510,7 +1460,7 @@ class pipelined
 			}
 		}
 
-		else if (ALU_OP == 35)//bltu
+		else if (ALU_OP == 35) //bltu
 		{
 			if ((unsigned)InA < (unsigned)InB)
 			{
@@ -1521,7 +1471,7 @@ class pipelined
 			}
 		}
 
-		else if (ALU_OP == 4)//blt
+		else if (ALU_OP == 4) //blt
 		{
 			if (InA < InB)
 			{
@@ -1532,7 +1482,7 @@ class pipelined
 			}
 		}
 
-		else if (ALU_OP == 5)//bne
+		else if (ALU_OP == 5) //bne
 		{
 			if (InA != InB)
 			{
@@ -1573,7 +1523,7 @@ class pipelined
 			RZ = InA >> InB;
 			RZ |= InA & (1 << 31);
 		}
-		else if (ALU_OP == 22)//jalr
+		else if (ALU_OP == 22) //jalr
 		{
 			buffer_EX_MEM.RZ = InA + InB;
 			RZ = InA + InB;
@@ -1588,7 +1538,7 @@ class pipelined
 		else if (ALU_OP == 31 || ALU_OP == 32) // rem, remu
 			RZ = RA % RB;
 
-		else if (ALU_OP == -1 )
+		else if (ALU_OP == -1)
 		{ // jal
 			PC_SELECT = 1;
 			returnAddress = iag(EXECUTE_STAGE, INC_SELECT, PC_SELECT, immediate);
@@ -1601,16 +1551,11 @@ class pipelined
 		else if (buffer_ID_EX.isBranchInstruction == TRUE)
 			controlInstructions++;
 
-	
-	
-	
-			buffer_EX_MEM.RZ = RZ;
+		buffer_EX_MEM.RZ = RZ;
 
 		buffer_EX_MEM.returnAddress = returnAddress;
 		buffer_EX_MEM.INC_SELECT = INC_SELECT;
 		buffer_EX_MEM.PC_SELECT = PC_SELECT;
-	
-	
 	}
 	//end of ALU function
 
@@ -1861,7 +1806,7 @@ class pipelined
 	void runCode()
 	{
 		bool en = 1;
-		int branchDecisionMade=0;
+		int branchDecisionMade = 0;
 		int instruction_number; //for knob5
 		cout << "Knob 2 (Data Forwarding Knob)           :  ";
 		cin >> knob2;
@@ -1880,105 +1825,109 @@ class pipelined
 		cout << "----------------------------------------------------------------------" << endl;
 		int tmp3 = -1;
 		int tmp2 = 0;
-		int flag=0;
+		int flag = 0;
 		while (1)
 		{
+			cycleCount++;
 			if (memory[buffer_IF_ID.PC] == 0 && memory[buffer_IF_ID.PC + 1] == 0 && memory[buffer_IF_ID.PC + 2] == 0 && memory[buffer_IF_ID.PC + 3] == 0)
 				en = 0;
 
-			cycleCount++;
+			if (knob2 == 0)
+			{
 
-			if(knob2==0)
-            {
-            	
-            	
-                if(buffer_MEM_WB.en2==1){
-                	
-                    writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
-                }
+				if (buffer_MEM_WB.en2 == 1)
+				{
 
-                if(buffer_EX_MEM.en2==1)
-                {  
-              	
-                    buffer_MEM_WB.en2=1;
-                    memoryStage(buffer_EX_MEM.Y_SELECT, buffer_EX_MEM.MEM_READ, buffer_EX_MEM.MEM_WRITE, buffer_EX_MEM.RZ, buffer_EX_MEM.RB);
-                
-            }
-                else{
-                	buffer_MEM_WB.en2=0;
-                	buffer_MEM_WB.addressC=0;
-                }
+					writeBack(buffer_MEM_WB.RF_WRITE, buffer_MEM_WB.addressC);
+				}
 
-                if(buffer_ID_EX.en2==1)
-                {
-                    buffer_EX_MEM.en2=1;
-                    alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
-                  
-                }
-                else{ 
-                	buffer_EX_MEM.en2=0;
-                	buffer_EX_MEM.addressC=0;
-                }
-				
-             		
-                if(buffer_IF_ID.en2<1)
-                	buffer_IF_ID.en2++;
-                
-                if(buffer_IF_ID.en2==1 && branchDecisionMade==0)
-                {	
-                    
-                    buffer_ID_EX.en2=1;
-                    decode();
-                    
-                  
-                }
-                else {
-                	buffer_ID_EX.en2=0; 
-                }
-               
-                
-               	int dataDependencyMtoE= stall_check_MtoE();
-                if(dataDependencyMtoE !=NO_DATA_DEPEND){
-                	buffer_IF_ID.en2=-1;
-                	buffer_ID_EX.en2=0;
-                	stalls_data_hazard++;
-                	data_hazard++;      
-                	cout<<buffer_IF_ID.PC<<endl;    	                
-                }
-                		
-                int dataDependencyEtoE= stall_check_EtoE();
-                if(dataDependencyEtoE != NO_DATA_DEPEND){
-                	buffer_IF_ID.en2=-2;
-                	
-                	buffer_ID_EX.en2=0;
-                	stalls_data_hazard++;      
-                } 
-                	if(dataDependencyMtoE!=NO_DATA_DEPEND && dataDependencyEtoE!=NO_DATA_DEPEND){
-                		stalls_data_hazard--;
-                		data_hazard++;
-                	}
-                if(buffer_IF_ID.en2==1)
-                {	
-                	
-           			fetch(en);
-           			branchDecisionMade=0;
-      			}
+				if (buffer_EX_MEM.en2 == 1)
+				{
 
-      			if (buffer_EX_MEM.isBranchInstruction == TRUE && buffer_EX_MEM.branchTaken == TRUE && branchDecisionMade==0)
+					buffer_MEM_WB.en2 = 1;
+					memoryStage(buffer_EX_MEM.Y_SELECT, buffer_EX_MEM.MEM_READ, buffer_EX_MEM.MEM_WRITE, buffer_EX_MEM.RZ, buffer_EX_MEM.RB);
+				}
+				else
+				{
+					buffer_MEM_WB.en2 = 0;
+					buffer_MEM_WB.addressC = 0;
+				}
+
+				if (buffer_ID_EX.en2 == 1)
+				{
+					buffer_EX_MEM.en2 = 1;
+					alu(buffer_ID_EX.ALU_OP, buffer_ID_EX.B_SELECT, buffer_ID_EX.immediate);
+				}
+				else
+				{
+					buffer_EX_MEM.en2 = 0;
+					buffer_EX_MEM.addressC = 0;
+				}
+
+				if (buffer_IF_ID.en2 < 1)
+					buffer_IF_ID.en2++;
+
+				if (buffer_IF_ID.en2 == 1 && branchDecisionMade == 0)
+				{
+
+					buffer_ID_EX.en2 = 1;
+					decode();
+				}
+				else
+				{
+					buffer_ID_EX.en2 = 0;
+				}
+				int dataDependencyMtoE = stall_check_MtoE();
+				//cout<<buffer_IF_ID.en2<<" OUT"<<cycleCount<<endl;
+				if (dataDependencyMtoE != NO_DATA_DEPEND)
+				{
+					buffer_IF_ID.en2 = 0;
+					buffer_ID_EX.en2 = 0;
+					stalls_data_hazard+=1;
+					data_hazard++;
+				}
+				//cout << buffer_IF_ID.en2 << " OUT2" <<cycleCount<< endl;
+				int dataDependencyEtoE = stall_check_EtoE();
+				if (dataDependencyEtoE != NO_DATA_DEPEND)
+				{	
+					buffer_IF_ID.en2 = -1;
+					buffer_ID_EX.en2 = 0;
+					stalls_data_hazard++;
+					tmp2=1;
+					data_hazard++;
+					//cout<<cycleCount<<" PPP"<<endl;
+				}
+				if(dataDependencyEtoE != NO_DATA_DEPEND && tmp2==1)
+				{   
+					data_hazard--;
+					tmp2=0;
+				}
+				//cout<<cycleCount<< " RRRR"<<endl;
+			//	if (dataDependencyMtoE != NO_DATA_DEPEND && tmp2 != NO_DATA_DEPEND)
+			//	{  
+			//		stalls_data_hazard--;
+			//		data_hazard--;
+		//			tmp2=NO_DATA_DEPEND;
+		//		}
+				if (buffer_IF_ID.en2 == 1)
+				{
+
+					fetch(en);
+					branchDecisionMade = 0;
+				}
+
+				if (buffer_EX_MEM.isBranchInstruction == TRUE && buffer_EX_MEM.branchTaken == TRUE && branchDecisionMade == 0)
 				{
 					buffer_IF_ID.PC = buffer_EX_MEM.PC - 4;
-					buffer_IF_ID.en2 = -1;
+					buffer_IF_ID.en2 = 0;
 					buffer_ID_EX.en2 = 0;
 					buffer_EX_MEM.isBranchInstruction = FALSE;
 					buffer_EX_MEM.branchTaken = FALSE;
 					stalls_control_hazard += 2;
 					branch_mispredictions++;
-					branchDecisionMade=1;
+					branchDecisionMade = 1;
 				}
-
-                
-               
-            }
+			}
 			else if (knob2 == 1)
 			{
 				if (buffer_MEM_WB.en2 == 1)
@@ -2062,8 +2011,11 @@ class pipelined
 				cout << data_hazard;
 		}
 		// Inserted NOP
+
+		if(knob2==ON)
+			data_hazard+=stalls_data_hazard;
 		cycleCount -= 2;
-		aluInstructions -= 2;
+		aluInstructions -= 1;
 		if (knob3 == OFF)
 			printRegisterFile();
 		cout << "----------------------------------------------------------------------" << endl;

@@ -12,11 +12,13 @@ l1: addi x2,x2,-12
     jal x1,fib 
     lw x3,4(x2)
     sw x4,8(x2)
+    add x0, x0, x0
     addi x3,x3,-2
     jal x1,fib 
     lw x5,8(x2)
     add x4,x4,x5
     lw x1,0(x2)
+    add x0, x0, x0
     addi x2,x2,12
     jalr x0, 0(x1) 
 exit:
