@@ -1,32 +1,53 @@
-Risc V Simulation Software (ReadMe File)
-----------------------------------------------------------
-Overview :
+# Risc V Simulation Software
+This is a simultion software for RISC-V(32 bit)! It converts assembly instructions to machine instructions. It can be implemented with\without pipeline. It supports forwarding as well as stalling. Cache support is also included along with branch prediction.
 
-Task 1 : Converts assembly code to machine code
 
-Task 2 : Unpipelined execution of machine code
+## Directories :
+```bash
+ |
+  |- src
+      |- assembler.cpp
+      |- unPipelinedSimulator.cpp
+      |- simulator.cpp
+  |- Assembly Codes
+      |
+      |- fibo_rec.cpp
+```
 
-Task 3 : Pipelined/(Unpipelined) Stalling, Forwarding, Static Branch Prediction, Cache Support 
 
-For only stalling, control detection moved to decode(1 stall penalty for misprediction)
-
-For forwarding, control detection in ALU(2 stalls penanlty for misprediction)
-
-Branch Prediction : Static & Always Not Taken
-
-Cache : Direct Map, Set Assosiative, Fully Associative
-
-----------------------------------------------------------
-Run :
-
+## Run Assembler :
 In terminal go to file location :
 
-g++ task1.cpp -o ./a
+```bash
+    g++ assembler.cpp -o ./a
+    ./a
+```
 
-./a
+Now enter the file name like assemblyCode.asm or fibo_rec.asm or any other!
 
-(Enter file name : assemblyCode.asm or any other)
 
-g++ task3.cpp -o ./b
+## Run Simulator :
+```bash
+    g++ simulator.cpp -o ./b
+    ./b
+ ```
+ Choose accordingly!
+ Results will be stored in regFile.txt, stats.txt, memory.txt
+ 
+ 
+## Overview :
 
-./b
+- assembler             : Converts assembly code to machine code
+- unPipelinedSimulator  : Unpipelined simulation of machine code
+- simulator             : Pipelined/(Unpipelined) Stalling, Forwarding, Static Branch Prediction, Cache Support 
+- Branch Prediction     : Static & Always Not Taken
+- Misprediction Penalty : 2 stalls
+- Cache                 : Direct Map, Set Assosiative, Fully Associative
+
+
+## Created by :
+- [Amit Srivastava](https://github.com/cynicphoenix)
+- [Bhawna](https://github.com/bhawnapaliwal)
+- [Aman Pandey](https://github.com/pandey2000)
+- [Soumil Kanwal](https://github.com/soumilkanwal80)
+- [Deepak Pant](https://github.com/GaussQR)
